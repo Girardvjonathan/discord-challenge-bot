@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  discordId     String       @unique
+  username      String
+  avatar        String?
+  createdAt     DateTime     @default(now())
+  submissions   Submission[]
+  servers       ServerUser[]
+}
+
+model Server {
+  id         String       @id @default(cuid())
+  guildId    String       @unique
+  name       String
+  createdAt  DateTime     @default(now())
+  challenges Challenge[]
+  users      ServerUser[]
+}
+
+model ServerUser {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  server    Server   @relation(fields: [serverId], references: [id])
+  serverId  String
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, serverId])
+}
+
+model Challenge {
+  id          String       @id @default(cuid())
+  type        String       @default("pushup")
+  active      Boolean      @default(true)
+  server      Server       @relation(fields: [serverId], references: [id])
+  serverId    String
+  createdAt   DateTime     @default(now())
+  submissions Submission[]
+}
+
+model Submission {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  challengeId String
+  count       Int
+  date        DateTime  @default(now()) @db.Date
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, challengeId, date])
+}
