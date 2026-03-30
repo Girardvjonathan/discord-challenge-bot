@@ -8,14 +8,14 @@ Foundation already in place: Prisma schema (5 models), Discord bot scaffold, Nex
 
 ## Tasks (ordered by dependency)
 
-### Phase 1 — Database & Environment
+### Phase 1 — Database & Environment ✅
 
-**Task 1 — Finalize Prisma schema & run initial migration**
+**Task 1 — Finalize Prisma schema & run initial migration** ✅
 - Add any missing fields (e.g. `notificationsEnabled` on `User`, `channelId` on `Server` so the bot knows where to post)
 - Run `prisma migrate dev --name init`
 - Commit migration files
 
-**Task 2 — Register Discord slash commands**
+**Task 2 — Register Discord slash commands** ✅
 - Create a one-off script (`src/scripts/register-commands.ts`) that calls the Discord REST API to register `/pushup` globally (or per-guild during dev)
 - Add `npm run register` script to `package.json`
 - Must run once after any command definition changes
@@ -24,17 +24,18 @@ Foundation already in place: Prisma schema (5 models), Discord bot scaffold, Nex
 
 ### Phase 2 — Bot Core Logic
 
-**Task 3 — Persist submission on `/pushup`**
+**Task 3 — Persist submission on `/pushup`** ✅
 - On `/pushup <count>`, upsert a `Submission` row for `(userId, challengeId, today)`
 - Auto-create `User` and `ServerUser` rows on first interaction (discord ID is available from interaction)
 - Enforce the one-submission-per-day rule; if already submitted, update count and reply accordingly
 - Reply ephemerally with confirmation
 
-**Task 4 — Guild join handler (bot added to server)**
+**Task 4 — Guild join handler (bot added to server)** ✅
 - Listen for `guildCreate` event
 - Create a `Server` row and a default `Challenge` (type: pushup, active: true)
 - Store `channelId` of the system/default channel for posting results
 - Post a welcome message with the registration link
+- Bootstrap existing guilds on `clientReady` so setup isn't missed on restart
 
 **Task 5 — Daily 5 PM result post**
 - Fill in the scheduler stub: query all submissions for today across active challenges

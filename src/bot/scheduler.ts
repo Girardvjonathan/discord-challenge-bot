@@ -1,11 +1,12 @@
 import cron from 'node-cron';
 import { Client } from 'discord.js';
+import { postDailyResults } from './jobs/dailyResults';
 
 export function scheduleDailyJobs(client: Client) {
-  // Post daily results at 5PM (server local time — adjust timezone as needed)
+  // Post daily results at 5PM UTC
   cron.schedule('0 17 * * *', async () => {
     console.log('5PM — posting daily results...');
-    // TODO: query submissions for the day and post results to each active channel
+    await postDailyResults(client);
   });
 
   // Post weekly leaderboard every Sunday at 8PM

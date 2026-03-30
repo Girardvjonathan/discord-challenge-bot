@@ -1,6 +1,8 @@
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 import { data as pushupCommand } from '../bot/commands/pushup';
+import { data as resultsCommand } from '../bot/commands/results';
+import { data as startChallengeCommand } from '../bot/commands/startChallenge';
 
 dotenv.config();
 
@@ -13,7 +15,7 @@ if (!token || !clientId) {
   process.exit(1);
 }
 
-const commands = [pushupCommand.toJSON()];
+const commands = [pushupCommand.toJSON(), resultsCommand.toJSON(), startChallengeCommand.toJSON()];
 const rest = new REST().setToken(token);
 
 async function register() {

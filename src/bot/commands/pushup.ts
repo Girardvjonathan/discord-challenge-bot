@@ -37,7 +37,7 @@ export async function handlePushup(interaction: ChatInputCommandInteraction) {
     });
 
     if (!challenge) {
-      await interaction.editReply('No active challenge found for this server.');
+      await interaction.editReply('No active challenge found. An admin needs to run **/start_push_up_challenge** first.');
       return;
     }
 
