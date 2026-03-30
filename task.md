@@ -48,67 +48,67 @@ Foundation already in place: Prisma schema (5 models), Discord bot scaffold, Nex
 
 ---
 
-### Phase 3 — Leaderboard Posts
+### Phase 3 — Web Registration & Auth
 
-**Task 7 — Weekly leaderboard (Sundays 8 PM)**
-- Fill in scheduler stub: aggregate submissions for the current week
-- Post two columns: total push-up count and total check-ins (days submitted)
-- Reuse a shared `formatLeaderboard()` helper (also used by monthly)
-
-**Task 8 — Monthly leaderboard (1st of month 8 PM)**
-- Same as Task 7 but scoped to the previous calendar month
-- Re-use `formatLeaderboard()` helper
-
----
-
-### Phase 4 — Web Registration & Auth
-
-**Task 9 — Registration landing page**
+**Task 7 — Registration landing page**
 - Add a "Sign in with Discord" button on the home page using NextAuth's `signIn()`
 - After OAuth callback, upsert the `User` record in the DB from the session `discordId`
 - Redirect to `/admin` on success
 
-**Task 10 — Auth guard on `/admin`**
+**Task 8 — Auth guard on `/admin`**
 - Check session server-side; redirect to `/` if unauthenticated
 - Handle the multi-server case: if user belongs to one server, auto-select it; if multiple, show a server picker
 
 ---
 
-### Phase 5 — Admin Dashboard
+### Phase 4 — Admin Dashboard
 
-**Task 11 — API routes for dashboard data**
+**Task 9 — API routes for dashboard data**
 These are needed before building the UI components:
 - `GET /api/submissions?month=YYYY-MM` — returns user's submissions for the given month (calendar view)
 - `GET /api/stats` — returns total push-ups, last month vs this month delta
 - `POST /api/submissions` — create/update a submission (for corrections)
 - `DELETE /api/submissions/:id` — remove a submission
 
-**Task 12 — Calendar view**
+**Task 10 — Calendar view**
 - Render a monthly calendar grid; highlight days with a check-in
 - Clicking a day opens an edit modal (uses `POST /api/submissions`)
 
-**Task 13 — Stats panel**
+**Task 11 — Stats panel**
 - Total push-ups (all time)
 - Last month vs this month comparison (% delta)
 - Line chart over time using Recharts (`<LineChart>` with date on X-axis, count on Y-axis)
 
-**Task 14 — Leaderboard table on admin**
+**Task 12 — Leaderboard table on admin**
 - Tabbed view: weekly / monthly
 - Two columns: push-up count, check-in count
 - Highlight the current user's row
 
 ---
 
-### Phase 6 — Polish & Reliability
+### Phase 5 — Polish & Reliability
 
-**Task 15 — Error handling & input validation**
+**Task 13 — Error handling & input validation**
 - Wrap all Discord interaction handlers in try/catch; reply with a user-friendly error if something fails
 - Validate `count` range on `/pushup` (already has `min: 1`, add a sane max e.g. 10,000)
 - Handle DB connection errors gracefully at startup
 
-**Task 16 — Environment & deployment config**
+**Task 14 — Environment & deployment config**
 - Update `.env.example` with all required vars (DATABASE_URL, DISCORD_TOKEN, DISCORD_CLIENT_ID/SECRET, NEXTAUTH_SECRET, NEXTAUTH_URL)
 - Add a startup check that fails fast with a clear message if required env vars are missing
+
+---
+
+### Phase 6 — Leaderboard Posts
+
+**Task 15 — Weekly leaderboard (Sundays 8 PM)**
+- Fill in scheduler stub: aggregate submissions for the current week
+- Post two columns: total push-up count and total check-ins (days submitted)
+- Reuse a shared `formatLeaderboard()` helper (also used by monthly)
+
+**Task 16 — Monthly leaderboard (1st of month 8 PM)**
+- Same as Task 15 but scoped to the previous calendar month
+- Re-use `formatLeaderboard()` helper
 
 ---
 
