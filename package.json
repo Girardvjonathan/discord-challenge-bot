@@ -13,7 +13,8 @@
     "start": "node dist/bot/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "register": "ts-node src/scripts/register-commands.ts"
   },
   "dependencies": {
     "@prisma/client": "^7.6.0",
