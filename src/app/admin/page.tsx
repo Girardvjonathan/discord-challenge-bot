@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import Calendar from '../components/Calendar';
+import Stats from '../components/Stats';
 
 export default async function AdminDashboard({
   searchParams,
@@ -67,6 +68,8 @@ export default async function AdminDashboard({
     <main>
       <h1>{server.name} — Dashboard</h1>
       <p>Welcome, {session.user.name}!</p>
+      <h2>Stats</h2>
+      <Stats serverId={server.guildId} />
       <h2>Check-in Calendar</h2>
       <Calendar serverId={server.guildId} />
     </main>
