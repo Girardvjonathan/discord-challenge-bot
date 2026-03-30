@@ -26,9 +26,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       });
       return true;
     },
+    async jwt({ token, profile }) {
+      // Store the real Discord snowflake ID on first sign-in (profile only present then)
+      if (profile?.id) {
+        token.discordId = profile.id as string;
+      }
+      return token;
+    },
     async session({ session, token }) {
-      if (session.user && token.sub) {
-        (session.user as typeof session.user & { discordId: string }).discordId = token.sub;
+      if (session.user && token.discordId) {
+        (session.user as typeof session.user & { discordId: string }).discordId = token.discordId as string;
       }
       return session;
     },
