@@ -1,21 +1,10 @@
-import NextAuth from 'next-auth';
-import Discord from 'next-auth/providers/discord';
+import { handlers } from '@/auth';
+import { type NextRequest } from 'next/server';
 
-const handler = NextAuth({
-  providers: [
-    Discord({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-    }),
-  ],
-  callbacks: {
-    async session({ session, token }) {
-      if (session.user && token.sub) {
-        (session.user as typeof session.user & { discordId: string }).discordId = token.sub;
-      }
-      return session;
-    },
-  },
-});
+export function GET(request: NextRequest) {
+  return handlers.GET(request);
+}
 
-export { handler as GET, handler as POST };
+export function POST(request: NextRequest) {
+  return handlers.POST(request);
+}
