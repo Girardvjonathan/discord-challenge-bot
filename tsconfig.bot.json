@@ -4,13 +4,13 @@
     "module": "commonjs",
     "lib": ["ES2020"],
     "outDir": "./dist",
-    "rootDir": "./src/bot",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/bot/**/*"],
+  "include": ["src/bot/**/*", "src/lib/**/*", "src/scripts/**/*"],
   "exclude": ["node_modules", "dist"]
 }

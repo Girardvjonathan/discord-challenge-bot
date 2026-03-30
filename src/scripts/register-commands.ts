@@ -20,11 +20,11 @@ async function register() {
   try {
     if (guildId) {
       // Guild-scoped: instant propagation, use during development
-      await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: commands });
+      await rest.put(Routes.applicationGuildCommands(clientId!, guildId), { body: commands });
       console.log(`Registered ${commands.length} command(s) to guild ${guildId}`);
     } else {
       // Global: up to 1 hour to propagate, use for production
-      await rest.put(Routes.applicationCommands(clientId), { body: commands });
+      await rest.put(Routes.applicationCommands(clientId!), { body: commands });
       console.log(`Registered ${commands.length} command(s) globally`);
     }
   } catch (err) {
