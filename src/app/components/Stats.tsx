@@ -11,12 +11,13 @@ import {
 } from 'recharts';
 
 interface StatsData {
-  totalPushups: number;
+  totalCount: number;
   checkIns: number;
   thisMonth: number;
   lastMonth: number;
   delta: number | null;
-  history: { date: string; count: number }[];
+  challengeName: string;
+  history: { date: string; count: number; type: string }[];
 }
 
 export default function Stats({ serverId }: { serverId: string }) {
@@ -48,7 +49,7 @@ export default function Stats({ serverId }: { serverId: string }) {
   return (
     <section>
       <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        <StatCard label="Total push-ups" value={data.totalPushups.toLocaleString()} />
+        <StatCard label={`Total ${data.challengeName.toLowerCase()}`} value={data.totalCount.toLocaleString()} />
         <StatCard label="Total check-ins" value={data.checkIns.toLocaleString()} />
         <StatCard label="This month" value={data.thisMonth.toLocaleString()} sub={deltaLabel} />
         <StatCard label="Last month" value={data.lastMonth.toLocaleString()} />

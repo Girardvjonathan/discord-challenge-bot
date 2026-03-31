@@ -25,33 +25,33 @@ export async function GET(req: NextRequest) {
   if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const challenge = await prisma.challenge.findFirst({ where: { serverId: server.id, active: true } });
-  if (!challenge) return NextResponse.json({ totalPushups: 0, checkIns: 0, thisMonth: 0, lastMonth: 0, delta: null, history: [] });
+  if (!challenge) {
+    return NextResponse.json({ totalCount: 0, checkIns: 0, thisMonth: 0, lastMonth: 0, delta: null, history: [] });
+  }
+
+  const typeFilter = challenge.type === 'any' ? {} : { type: challenge.type };
 
   const now = new Date();
   const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const lastMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
 
   const [allTime, thisMonth, lastMonth, history] = await Promise.all([
-    // Total push-ups and check-ins all time
-    prisma.submission.aggregate({
-      where: { userId: user.id, challengeId: challenge.id },
+    prisma.activityLog.aggregate({
+      where: { userId: user.id, ...typeFilter },
       _sum: { count: true },
       _count: { id: true },
     }),
-    // This month total
-    prisma.submission.aggregate({
-      where: { userId: user.id, challengeId: challenge.id, date: { gte: thisMonthStart } },
+    prisma.activityLog.aggregate({
+      where: { userId: user.id, ...typeFilter, date: { gte: thisMonthStart } },
       _sum: { count: true },
     }),
-    // Last month total
-    prisma.submission.aggregate({
-      where: { userId: user.id, challengeId: challenge.id, date: { gte: lastMonthStart, lt: thisMonthStart } },
+    prisma.activityLog.aggregate({
+      where: { userId: user.id, ...typeFilter, date: { gte: lastMonthStart, lt: thisMonthStart } },
       _sum: { count: true },
     }),
-    // All submissions for chart
-    prisma.submission.findMany({
-      where: { userId: user.id, challengeId: challenge.id },
-      select: { date: true, count: true },
+    prisma.activityLog.findMany({
+      where: { userId: user.id, ...typeFilter },
+      select: { date: true, count: true, type: true },
       orderBy: { date: 'asc' },
     }),
   ]);
@@ -61,11 +61,12 @@ export async function GET(req: NextRequest) {
   const delta = lastMonthTotal === 0 ? null : Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100);
 
   return NextResponse.json({
-    totalPushups: allTime._sum.count ?? 0,
+    totalCount: allTime._sum.count ?? 0,
     checkIns: allTime._count.id,
     thisMonth: thisMonthTotal,
     lastMonth: lastMonthTotal,
     delta,
-    history: history.map(s => ({ date: s.date, count: s.count })),
+    challengeName: challenge.name,
+    history: history.map(l => ({ date: l.date, count: l.count, type: l.type })),
   });
 }

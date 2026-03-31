@@ -5,16 +5,18 @@ import { useEffect, useState } from 'react';
 interface Submission {
   id: string;
   date: string;
+  type: string;
   count: number;
 }
 
 interface EditState {
   date: string;
+  type: string;
   count: string;
   submissionId: string | null;
 }
 
-export default function Calendar({ serverId }: { serverId: string }) {
+export default function Calendar({ serverId, challengeType }: { serverId: string; challengeType: string }) {
   const now = new Date();
   const [year, setYear] = useState(now.getUTCFullYear());
   const [month, setMonth] = useState(now.getUTCMonth() + 1);
@@ -48,7 +50,8 @@ export default function Calendar({ serverId }: { serverId: string }) {
   function openEdit(day: number) {
     const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const existing = submissionByDate[dateStr];
-    setEdit({ date: dateStr, count: existing ? String(existing.count) : '', submissionId: existing?.id ?? null });
+    const defaultType = challengeType === 'any' ? '' : challengeType;
+    setEdit({ date: dateStr, type: existing?.type ?? defaultType, count: existing ? String(existing.count) : '', submissionId: existing?.id ?? null });
   }
 
   async function saveEdit() {
@@ -58,7 +61,7 @@ export default function Calendar({ serverId }: { serverId: string }) {
       await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: edit.date, count: Number(edit.count), serverId }),
+        body: JSON.stringify({ date: edit.date, type: edit.type || challengeType, count: Number(edit.count), serverId }),
       });
       // Refresh
       const data = await fetch(`/api/submissions?month=${monthKey}&serverId=${serverId}`).then(r => r.json());
@@ -139,19 +142,31 @@ export default function Calendar({ serverId }: { serverId: string }) {
         }}>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '8px', minWidth: '280px' }}>
             <h3 style={{ marginTop: 0 }}>{edit.date}</h3>
+            {challengeType === 'any' && (
+              <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+                Activity type
+                <input
+                  type="text"
+                  placeholder="e.g. walking, pushup"
+                  value={edit.type}
+                  onChange={e => setEdit({ ...edit, type: e.target.value })}
+                  style={{ display: 'block', width: '100%', marginTop: '4px', padding: '6px' }}
+                />
+              </label>
+            )}
             <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-              Push-ups
+              Count
               <input
                 type="number"
                 min={1}
-                max={10000}
+                max={1000000}
                 value={edit.count}
                 onChange={e => setEdit({ ...edit, count: e.target.value })}
                 style={{ display: 'block', width: '100%', marginTop: '4px', padding: '6px' }}
               />
             </label>
             <div style={{ display: 'flex', gap: '8px', marginTop: '1rem' }}>
-              <button onClick={saveEdit} disabled={saving || !edit.count}>
+              <button onClick={saveEdit} disabled={saving || !edit.count || (challengeType === 'any' && !edit.type)}>
                 {saving ? 'Saving…' : 'Save'}
               </button>
               {edit.submissionId && (

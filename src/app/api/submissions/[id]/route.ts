@@ -16,14 +16,11 @@ export async function DELETE(
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const submission = await prisma.submission.findUnique({ where: { id } });
-  if (!submission) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  const log = await prisma.activityLog.findUnique({ where: { id } });
+  if (!log) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Only allow deleting own submissions
-  if (submission.userId !== user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  if (log.userId !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  await prisma.submission.delete({ where: { id } });
+  await prisma.activityLog.delete({ where: { id } });
   return NextResponse.json({ success: true });
 }
