@@ -5,33 +5,33 @@ export async function postDailyResults(client: Client) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const servers = await prisma.server.findMany({
-    where: { challenges: { some: { active: true } } },
-    include: { challenges: { where: { active: true }, take: 1 } },
+  const guilds = await prisma.channel.findMany({
+    where: { challengeActive: true },
   });
 
-  for (const server of servers) {
+  for (const guild of guilds) {
     try {
-      const challenge = server.challenges[0];
-      if (!challenge || !server.channelId) continue;
+      if (!guild.channelId || !guild.challengeType) continue;
 
-      const channel = await client.channels.fetch(server.channelId) as TextChannel | null;
-      if (!channel) continue;
+      const discordChannel = await client.channels.fetch(guild.channelId) as TextChannel | null;
+      if (!discordChannel) continue;
 
-      const members = await prisma.serverUser.findMany({
-        where: { serverId: server.id },
+      const members = await prisma.channelUser.findMany({
+        where: { channelId: guild.id },
         include: { user: true },
       });
       const memberIds = members.map(m => m.userId);
 
-      if (challenge.type === 'any') {
-        await postAnyResults(channel, challenge.name, memberIds, members, today);
+      if (guild.challengeType === 'any') {
+        await postAnyResults(discordChannel, guild.challengeName!, memberIds, members, today);
         continue;
       }
 
       // Specific type challenge (pushup, situp, pullup, other)
-      // "other" stores activity as challenge.name.toLowerCase()
-      const resolvedType = challenge.type === 'other' ? challenge.name.toLowerCase() : challenge.type;
+      // "other" stores activity as challengeName.toLowerCase()
+      const resolvedType = guild.challengeType === 'other'
+        ? guild.challengeName!.toLowerCase()
+        : guild.challengeType;
 
       const logs = await prisma.activityLog.findMany({
         where: { userId: { in: memberIds }, type: resolvedType, date: today },
@@ -49,29 +49,29 @@ export async function postDailyResults(client: Client) {
       const ranked = [...byUser.values()].sort((a, b) => b.total - a.total);
 
       if (ranked.length === 0) {
-        await channel.send(`📭 No ${challenge.name.toLowerCase()} logged today. Get after it tomorrow!`);
+        await discordChannel.send(`📭 No ${guild.challengeName!.toLowerCase()} logged today. Get after it tomorrow!`);
         continue;
       }
 
       const lines = ranked.map((entry, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        return `${medal} **${entry.username}** — ${entry.total} ${challenge.name.toLowerCase()}`;
+        return `${medal} **${entry.username}** — ${entry.total} ${guild.challengeName!.toLowerCase()}`;
       });
 
       const grandTotal = ranked.reduce((sum, e) => sum + e.total, 0);
 
-      await channel.send(
-        `💪 **Today's ${challenge.name} Results**\n\n${lines.join('\n')}\n\n` +
+      await discordChannel.send(
+        `💪 **Today's ${guild.challengeName} Results**\n\n${lines.join('\n')}\n\n` +
         `**${ranked.length}** participant${ranked.length !== 1 ? 's' : ''} · **${grandTotal}** total`,
       );
     } catch (err) {
-      console.error(`[dailyResults] error for server ${server.name}:`, err);
+      console.error(`[dailyResults] error for guild ${guild.name}:`, err);
     }
   }
 }
 
 async function postAnyResults(
-  channel: TextChannel,
+  discordChannel: TextChannel,
   challengeName: string,
   memberIds: string[],
   members: { userId: string; user: { username: string } }[],
@@ -85,7 +85,7 @@ async function postAnyResults(
   });
 
   if (todayLogs.length === 0) {
-    await channel.send(`📭 No activity logged today for **${challengeName}**. Get after it tomorrow!`);
+    await discordChannel.send(`📭 No activity logged today for **${challengeName}**. Get after it tomorrow!`);
     return;
   }
 
@@ -154,7 +154,7 @@ async function postAnyResults(
 
   const recentLines = featured.map(l => `• **${l.user.username}** — ${l.count} ${l.type}`);
 
-  await channel.send(
+  await discordChannel.send(
     `💪 **${challengeName} — Daily Update**\n\n` +
     `📊 **${submissionCount}** submission${submissionCount !== 1 ? 's' : ''} · **${participantCount}** participant${participantCount !== 1 ? 's' : ''}\n\n` +
     `🕐 **Recent activity**\n${recentLines.join('\n')}\n\n` +

@@ -41,7 +41,7 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   const guildId = interaction.guildId!;
-  const channel = interaction.channel as TextChannel;
+  const discordChannel = interaction.channel as TextChannel;
   const type = interaction.options.getString('type', true);
   const customName = interaction.options.getString('name')?.trim();
 
@@ -54,39 +54,35 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
   const displayName = type === 'other' ? customName! : typeInfo.name;
 
   try {
-    const server = await prisma.server.upsert({
+    await prisma.channel.upsert({
       where: { guildId },
-      update: { channelId: channel.id, channelName: channel.name },
+      update: {
+        channelId: discordChannel.id,
+        channelName: discordChannel.name,
+        challengeType: type,
+        challengeName: displayName,
+        challengeActive: true,
+      },
       create: {
         guildId,
         name: interaction.guild!.name,
-        channelId: channel.id,
-        channelName: channel.name,
+        channelId: discordChannel.id,
+        channelName: discordChannel.name,
+        challengeType: type,
+        challengeName: displayName,
+        challengeActive: true,
       },
     });
 
-    const existing = await prisma.challenge.findFirst({ where: { serverId: server.id } });
-
-    if (existing) {
-      await prisma.challenge.update({
-        where: { id: existing.id },
-        data: { type, name: displayName, active: true },
-      });
-    } else {
-      await prisma.challenge.create({
-        data: { serverId: server.id, type, name: displayName, active: true },
-      });
-    }
-
     await interaction.editReply(
-      `**${displayName}** challenge started! Results will be posted in <#${channel.id}> every day at 5 PM.`
+      `**${displayName}** challenge started! Results will be posted in <#${discordChannel.id}> every day at 5 PM.`
     );
 
     const logInstruction = type === 'any'
       ? 'Use **/pushup**, **/situp**, **/pullup**, or **/log** each day to log any activity.'
       : `Use **${typeInfo.command} <count>** each day to log your ${displayName.toLowerCase()}.`;
 
-    await channel.send(
+    await discordChannel.send(
       `🏋️ **Daily ${displayName} Challenge has started!**\n\n` +
       `${logInstruction}\n` +
       `Results are posted here every day at 5 PM and leaderboards every Sunday.\n\n` +

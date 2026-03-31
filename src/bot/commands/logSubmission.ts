@@ -9,9 +9,9 @@ import { prisma } from '../../lib/prisma';
  *  - For /log: pass null → resolved from the channel's challenge
  *
  * Challenge matching:
- *  - challenge.type === activityType      (e.g. "pushup" challenge + pushup activity)
- *  - challenge.type === "other" AND challenge.name.toLowerCase() === activityType
- *  - challenge.type === "any"             (matches everything)
+ *  - channel.challengeType === activityType      (e.g. "pushup" challenge + pushup activity)
+ *  - channel.challengeType === "other" AND channel.challengeName.toLowerCase() === activityType
+ *  - channel.challengeType === "any"             (matches everything)
  */
 export async function logSubmission(
   interaction: ChatInputCommandInteraction,
@@ -26,27 +26,27 @@ export async function logSubmission(
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    const server = await prisma.server.findUnique({
+    const channel = await prisma.channel.findUnique({
       where: { guildId: interaction.guildId },
-      include: { challenges: { where: { active: true }, take: 1 } },
     });
 
     // Resolve activity type from channel challenge when not explicitly provided
-    let resolvedType = activityType;
-    if (resolvedType === null) {
-      const challenge = server?.challenges[0];
-      if (!challenge) {
+    let resolvedType: string;
+    if (activityType !== null) {
+      resolvedType = activityType;
+    } else {
+      if (!channel?.challengeActive || !channel.challengeType) {
         await interaction.editReply('No active challenge in this server. An admin needs to run **/start_challenge** first.');
         return;
       }
-      if (challenge.type === 'any') {
-        await interaction.editReply('This is an open challenge — please specify an activity type: `/log type:walking count:5000`');
+      if (channel.challengeType === 'any') {
+        await interaction.editReply('This is an open challenge — please use a specific command: `/pushup`, `/situp`, or `/pullup`.');
         return;
       }
       // For "other" challenges, use the challenge name as the activity identifier
-      resolvedType = challenge.type === 'other'
-        ? challenge.name.toLowerCase()
-        : challenge.type;
+      resolvedType = channel.challengeType === 'other'
+        ? channel.challengeName!.toLowerCase()
+        : channel.challengeType;
     }
 
     // Upsert user
@@ -60,11 +60,11 @@ export async function logSubmission(
       },
     });
 
-    if (server) {
-      await prisma.serverUser.upsert({
-        where: { userId_serverId: { userId: user.id, serverId: server.id } },
+    if (channel) {
+      await prisma.channelUser.upsert({
+        where: { userId_channelId: { userId: user.id, channelId: channel.id } },
         update: {},
-        create: { userId: user.id, serverId: server.id },
+        create: { userId: user.id, channelId: channel.id },
       });
     }
 
@@ -82,27 +82,24 @@ export async function logSubmission(
       create: { userId: user.id, type: resolvedType, count, date: today },
     });
 
-    // Find all active challenges across the user's servers that match this activity
-    const memberships = await prisma.serverUser.findMany({
+    // Find all active challenges across the user's channels that match this activity
+    const memberships = await prisma.channelUser.findMany({
       where: { userId: user.id },
-      include: {
-        server: {
-          include: { challenges: { where: { active: true } } },
-        },
-      },
+      include: { channel: true },
     });
 
-    const matchingChallenges = memberships.flatMap(m =>
-      m.server.challenges.filter(c => {
-        if (c.type === 'any') return true;
-        if (c.type === 'other') return c.name.toLowerCase() === resolvedType;
-        return c.type === resolvedType;
-      })
-    );
+    const matchingChannels = memberships
+      .map(m => m.channel)
+      .filter(ch => {
+        if (!ch.challengeActive || !ch.challengeType) return false;
+        if (ch.challengeType === 'any') return true;
+        if (ch.challengeType === 'other') return ch.challengeName?.toLowerCase() === resolvedType;
+        return ch.challengeType === resolvedType;
+      });
 
     const action = existing ? 'Updated' : 'Logged';
-    const challengeList = matchingChallenges.length > 0
-      ? `\nContributing to: ${matchingChallenges.map(c => `**${c.name}**`).join(', ')}`
+    const challengeList = matchingChannels.length > 0
+      ? `\nContributing to: ${matchingChannels.map(c => `**${c.challengeName}**`).join(', ')}`
       : '\n_No active challenges match this activity._';
 
     await interaction.editReply(

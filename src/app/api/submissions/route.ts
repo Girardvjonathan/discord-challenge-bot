@@ -23,23 +23,23 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const server = guildId
-    ? await prisma.server.findUnique({ where: { guildId } })
-    : await prisma.serverUser.findFirst({ where: { userId: user.id }, include: { server: true } }).then(r => r?.server);
+  const channel = guildId
+    ? await prisma.channel.findUnique({ where: { guildId } })
+    : await prisma.channelUser.findFirst({ where: { userId: user.id }, include: { channel: true } }).then(r => r?.channel);
 
-  if (!server) return NextResponse.json({ error: 'Server not found' }, { status: 404 });
+  if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
 
-  const membership = await prisma.serverUser.findUnique({
-    where: { userId_serverId: { userId: user.id, serverId: server.id } },
+  const membership = await prisma.channelUser.findUnique({
+    where: { userId_channelId: { userId: user.id, channelId: channel.id } },
   });
   if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const challenge = await prisma.challenge.findFirst({ where: { serverId: server.id, active: true } });
-
   // Build activity type filter based on challenge type
-  const typeFilter = !challenge || challenge.type === 'any'
+  const typeFilter = !channel.challengeActive || !channel.challengeType || channel.challengeType === 'any'
     ? {}
-    : { type: challenge.type };
+    : channel.challengeType === 'other'
+    ? { type: channel.challengeName!.toLowerCase() }
+    : { type: channel.challengeType };
 
   const logs = await prisma.activityLog.findMany({
     where: { userId: user.id, date: { gte: from, lt: to }, ...typeFilter },
@@ -66,14 +66,14 @@ export async function POST(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const server = guildId
-    ? await prisma.server.findUnique({ where: { guildId } })
-    : await prisma.serverUser.findFirst({ where: { userId: user.id }, include: { server: true } }).then(r => r?.server);
+  const channel = guildId
+    ? await prisma.channel.findUnique({ where: { guildId } })
+    : await prisma.channelUser.findFirst({ where: { userId: user.id }, include: { channel: true } }).then(r => r?.channel);
 
-  if (!server) return NextResponse.json({ error: 'Server not found' }, { status: 404 });
+  if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
 
-  const membership = await prisma.serverUser.findUnique({
-    where: { userId_serverId: { userId: user.id, serverId: server.id } },
+  const membership = await prisma.channelUser.findUnique({
+    where: { userId_channelId: { userId: user.id, channelId: channel.id } },
   });
   if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 

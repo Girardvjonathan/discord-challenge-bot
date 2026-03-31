@@ -18,15 +18,15 @@ export default async function AdminDashboard({
   const user = await prisma.user.findUnique({
     where: { discordId },
     include: {
-      servers: {
-        include: { server: { include: { challenges: { where: { active: true } } } } },
+      channels: {
+        include: { channel: true },
       },
     },
   });
 
   if (!user) redirect('/');
 
-  const memberships = user.servers;
+  const memberships = user.channels;
 
   if (memberships.length === 0) {
     return (
@@ -36,7 +36,7 @@ export default async function AdminDashboard({
           <h1 style={{ marginBottom: '0.5rem' }}>No challenges found</h1>
           <p style={{ color: 'var(--text-muted)' }}>
             You are not part of any active challenge server yet. Ask an admin to run{' '}
-            <code>/start_push_up_challenge</code> in your Discord server.
+            <code>/start_challenge</code> in your Discord server.
           </p>
         </div>
       </main>
@@ -44,7 +44,7 @@ export default async function AdminDashboard({
   }
 
   const selectedMembership = guildId
-    ? memberships.find(m => m.server.guildId === guildId)
+    ? memberships.find(m => m.channel.guildId === guildId)
     : memberships.length === 1
     ? memberships[0]
     : null;
@@ -55,10 +55,10 @@ export default async function AdminDashboard({
         <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '2rem', minWidth: '320px' }}>
           <h1 style={{ marginBottom: '1rem' }}>Select a server</h1>
           <ul style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {memberships.map(({ server }) => (
-              <li key={server.id}>
+            {memberships.map(({ channel }) => (
+              <li key={channel.id}>
                 <a
-                  href={`/admin?server=${server.guildId}`}
+                  href={`/admin?server=${channel.guildId}`}
                   style={{
                     display: 'block',
                     padding: '10px 14px',
@@ -68,7 +68,7 @@ export default async function AdminDashboard({
                     fontWeight: 500,
                   }}
                 >
-                  {server.name}
+                  {channel.name}
                 </a>
               </li>
             ))}
@@ -78,7 +78,7 @@ export default async function AdminDashboard({
     );
   }
 
-  const server = selectedMembership.server;
+  const { channel } = selectedMembership;
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-tertiary)' }}>
@@ -91,7 +91,7 @@ export default async function AdminDashboard({
         flexShrink: 0,
       }}>
         <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '8px 8px 12px', borderBottom: '1px solid var(--border)', marginBottom: '8px' }}>
-          {server.name}
+          {channel.name}
         </div>
         {memberships.length > 1 && (
           <a href="/admin" style={{ display: 'block', padding: '6px 8px', fontSize: '0.875rem', color: 'var(--text-muted)', borderRadius: 'var(--radius-sm)' }}>
@@ -99,7 +99,7 @@ export default async function AdminDashboard({
           </a>
         )}
         <div style={{ padding: '6px 8px', fontSize: '0.875rem', background: 'var(--bg-modifier)', borderRadius: 'var(--radius-sm)', color: 'var(--text-normal)', fontWeight: 500 }}>
-          💪 Push-up Challenge
+          💪 {channel.challengeName ?? 'No active challenge'}
         </div>
         <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border)', marginTop: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -119,10 +119,10 @@ export default async function AdminDashboard({
         </p>
 
         <h2>Stats</h2>
-        <Stats serverId={server.guildId} />
+        <Stats serverId={channel.guildId} />
 
         <h2>Check-in Calendar</h2>
-        <Calendar serverId={server.guildId} challengeType={server.challenges[0]?.type ?? 'pushup'} />
+        <Calendar serverId={channel.guildId} challengeType={channel.challengeType ?? 'pushup'} />
       </main>
     </div>
   );

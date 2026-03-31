@@ -20,7 +20,7 @@ client.once('clientReady', async (c) => {
 });
 
 async function setupGuild(guild: import('discord.js').Guild, announce = false) {
-  await prisma.server.upsert({
+  await prisma.channel.upsert({
     where: { guildId: guild.id },
     update: { name: guild.name },
     create: { guildId: guild.id, name: guild.name },
@@ -33,7 +33,7 @@ async function setupGuild(guild: import('discord.js').Guild, announce = false) {
       ) as TextChannel | undefined;
 
     await defaultChannel?.send(
-      `👋 **Push-up Challenge Bot is here!**\n\nAn admin can run **/start_push_up_challenge** in any channel to kick things off.`
+      `👋 **Challenge Bot is here!**\n\nAn admin can run **/start_challenge** in any channel to kick things off.`
     );
   }
 }
@@ -49,7 +49,7 @@ async function bootstrapGuilds(c: import('discord.js').Client<true>) {
   }
 }
 
-// Bootstrap server + challenge when bot is added to a guild
+// Bootstrap channel record when bot is added to a guild
 client.on('guildCreate', async (guild) => {
   try {
     await setupGuild(guild, true);
@@ -58,14 +58,12 @@ client.on('guildCreate', async (guild) => {
   }
 });
 
-// Mark server inactive when bot is removed, preserving history
+// Deactivate challenge when bot is removed, preserving history
 client.on('guildDelete', async (guild) => {
   try {
-    const server = await prisma.server.findUnique({ where: { guildId: guild.id } });
-    if (!server) return;
-    await prisma.challenge.updateMany({
-      where: { serverId: server.id },
-      data: { active: false },
+    await prisma.channel.update({
+      where: { guildId: guild.id },
+      data: { challengeActive: false },
     });
   } catch (err) {
     console.error('[guildDelete] error:', err);

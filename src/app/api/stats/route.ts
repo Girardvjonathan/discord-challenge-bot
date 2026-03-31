@@ -13,23 +13,26 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const server = guildId
-    ? await prisma.server.findUnique({ where: { guildId } })
-    : await prisma.serverUser.findFirst({ where: { userId: user.id }, include: { server: true } }).then(r => r?.server);
+  const channel = guildId
+    ? await prisma.channel.findUnique({ where: { guildId } })
+    : await prisma.channelUser.findFirst({ where: { userId: user.id }, include: { channel: true } }).then(r => r?.channel);
 
-  if (!server) return NextResponse.json({ error: 'Server not found' }, { status: 404 });
+  if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
 
-  const membership = await prisma.serverUser.findUnique({
-    where: { userId_serverId: { userId: user.id, serverId: server.id } },
+  const membership = await prisma.channelUser.findUnique({
+    where: { userId_channelId: { userId: user.id, channelId: channel.id } },
   });
   if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-  const challenge = await prisma.challenge.findFirst({ where: { serverId: server.id, active: true } });
-  if (!challenge) {
-    return NextResponse.json({ totalCount: 0, checkIns: 0, thisMonth: 0, lastMonth: 0, delta: null, history: [] });
+  if (!channel.challengeActive || !channel.challengeType) {
+    return NextResponse.json({ totalCount: 0, checkIns: 0, thisMonth: 0, lastMonth: 0, delta: null, challengeName: '', history: [] });
   }
 
-  const typeFilter = challenge.type === 'any' ? {} : { type: challenge.type };
+  const typeFilter = channel.challengeType === 'any'
+    ? {}
+    : channel.challengeType === 'other'
+    ? { type: channel.challengeName!.toLowerCase() }
+    : { type: channel.challengeType };
 
   const now = new Date();
   const thisMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -66,7 +69,7 @@ export async function GET(req: NextRequest) {
     thisMonth: thisMonthTotal,
     lastMonth: lastMonthTotal,
     delta,
-    challengeName: challenge.name,
+    challengeName: channel.challengeName ?? channel.challengeType,
     history: history.map(l => ({ date: l.date, count: l.count, type: l.type })),
   });
 }
