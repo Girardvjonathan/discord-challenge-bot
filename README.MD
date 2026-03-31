@@ -68,7 +68,7 @@ npm run register
 ### 5. Run the bot
 
 ```bash
-npm run bot
+npm run dev:bot
 ```
 
 ### 6. Run the web app
@@ -118,3 +118,6 @@ npm run dev
 - **Web** — Next.js 16 (App Router), NextAuth v5
 - **Database** — PostgreSQL via Prisma v7 with `@prisma/adapter-pg`
 - **Auth** — Discord OAuth2
+
+# Know bugs/improvement area
+Streak calculation could be improved and modifying your activities in the admin might not change your streak/re-calculate
