@@ -1,37 +1,43 @@
 import { Client, TextChannel } from 'discord.js';
 import { prisma } from '../../lib/prisma';
 
-export async function postDailyResults(client: Client) {
+/**
+ * Posts daily results for all active challenge channels, or a specific one.
+ * @param discordChannelId - When provided (e.g. from /results), only posts for that channel.
+ */
+export async function postDailyResults(client: Client, discordChannelId?: string) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const guilds = await prisma.channel.findMany({
-    where: { challengeActive: true },
+  const channels = await prisma.channel.findMany({
+    where: {
+      challengeActive: true,
+      ...(discordChannelId ? { discordChannelId } : {}),
+    },
   });
 
-  for (const guild of guilds) {
+  for (const ch of channels) {
     try {
-      if (!guild.channelId || !guild.challengeType) continue;
+      if (!ch.challengeType) continue;
 
-      const discordChannel = await client.channels.fetch(guild.channelId) as TextChannel | null;
+      const discordChannel = await client.channels.fetch(ch.discordChannelId) as TextChannel | null;
       if (!discordChannel) continue;
 
       const members = await prisma.channelUser.findMany({
-        where: { channelId: guild.id },
+        where: { channelId: ch.id },
         include: { user: true },
       });
       const memberIds = members.map(m => m.userId);
 
-      if (guild.challengeType === 'any') {
-        await postAnyResults(discordChannel, guild.challengeName!, memberIds, members, today);
+      if (ch.challengeType === 'any') {
+        await postAnyResults(discordChannel, ch.challengeName!, memberIds, members, today);
         continue;
       }
 
       // Specific type challenge (pushup, situp, pullup, other)
-      // "other" stores activity as challengeName.toLowerCase()
-      const resolvedType = guild.challengeType === 'other'
-        ? guild.challengeName!.toLowerCase()
-        : guild.challengeType;
+      const resolvedType = ch.challengeType === 'other'
+        ? ch.challengeName!.toLowerCase()
+        : ch.challengeType;
 
       const logs = await prisma.activityLog.findMany({
         where: { userId: { in: memberIds }, type: resolvedType, date: today },
@@ -49,23 +55,23 @@ export async function postDailyResults(client: Client) {
       const ranked = [...byUser.values()].sort((a, b) => b.total - a.total);
 
       if (ranked.length === 0) {
-        await discordChannel.send(`📭 No ${guild.challengeName!.toLowerCase()} logged today. Get after it tomorrow!`);
+        await discordChannel.send(`📭 No ${ch.challengeName!.toLowerCase()} logged today. Get after it tomorrow!`);
         continue;
       }
 
       const lines = ranked.map((entry, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        return `${medal} **${entry.username}** — ${entry.total} ${guild.challengeName!.toLowerCase()}`;
+        return `${medal} **${entry.username}** — ${entry.total} ${ch.challengeName!.toLowerCase()}`;
       });
 
       const grandTotal = ranked.reduce((sum, e) => sum + e.total, 0);
 
       await discordChannel.send(
-        `💪 **Today's ${guild.challengeName} Results**\n\n${lines.join('\n')}\n\n` +
+        `💪 **Today's ${ch.challengeName} Results**\n\n${lines.join('\n')}\n\n` +
         `**${ranked.length}** participant${ranked.length !== 1 ? 's' : ''} · **${grandTotal}** total`,
       );
     } catch (err) {
-      console.error(`[dailyResults] error for guild ${guild.name}:`, err);
+      console.error(`[dailyResults] error for channel ${ch.name}:`, err);
     }
   }
 }
@@ -77,7 +83,6 @@ async function postAnyResults(
   members: { userId: string; user: { username: string } }[],
   today: Date,
 ) {
-  // Today's logs ordered by most recently created
   const todayLogs = await prisma.activityLog.findMany({
     where: { userId: { in: memberIds }, date: today },
     include: { user: true },
@@ -89,7 +94,6 @@ async function postAnyResults(
     return;
   }
 
-  // Distinct (userId, type) pairs = submission count
   const submissionCount = new Set(todayLogs.map(l => `${l.userId}:${l.type}`)).size;
   const participantCount = new Set(todayLogs.map(l => l.userId)).size;
 
@@ -110,7 +114,7 @@ async function postAnyResults(
     }
   }
 
-  // Global streak: all ActivityLog dates for each server member
+  // Global streak: all ActivityLog dates for each channel member
   const allLogs = await prisma.activityLog.findMany({
     where: { userId: { in: memberIds } },
     select: { userId: true, date: true },
@@ -126,10 +130,7 @@ async function postAnyResults(
 
   const streaks = members.map(m => {
     const dates = datesByUser.get(m.userId) ?? new Set<number>();
-
-    if (!dates.has(todayTime)) {
-      return { username: m.user.username, streak: 0 };
-    }
+    if (!dates.has(todayTime)) return { username: m.user.username, streak: 0 };
 
     let streak = 1;
     const d = new Date(today);

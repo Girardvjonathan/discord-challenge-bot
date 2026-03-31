@@ -2,19 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/stats?serverId=...
+// GET /api/stats?channelId=...
 export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const discordId = (session.user as typeof session.user & { discordId: string }).discordId;
-  const guildId = req.nextUrl.searchParams.get('serverId');
+  const discordChannelId = req.nextUrl.searchParams.get('channelId');
 
   const user = await prisma.user.findUnique({ where: { discordId } });
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const channel = guildId
-    ? await prisma.channel.findUnique({ where: { guildId } })
+  const channel = discordChannelId
+    ? await prisma.channel.findUnique({ where: { discordChannelId } })
     : await prisma.channelUser.findFirst({ where: { userId: user.id }, include: { channel: true } }).then(r => r?.channel);
 
   if (!channel) return NextResponse.json({ error: 'Channel not found' }, { status: 404 });

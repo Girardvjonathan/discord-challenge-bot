@@ -16,7 +16,7 @@ interface EditState {
   submissionId: string | null;
 }
 
-export default function Calendar({ serverId, challengeType }: { serverId: string; challengeType: string }) {
+export default function Calendar({ channelId, challengeType }: { channelId: string; challengeType: string }) {
   const now = new Date();
   const [year, setYear] = useState(now.getUTCFullYear());
   const [month, setMonth] = useState(now.getUTCMonth() + 1);
@@ -29,11 +29,11 @@ export default function Calendar({ serverId, challengeType }: { serverId: string
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/submissions?month=${monthKey}&serverId=${serverId}`)
+    fetch(`/api/submissions?month=${monthKey}&channelId=${channelId}`)
       .then(r => r.json())
       .then(data => setSubmissions(data.submissions ?? []))
       .finally(() => setLoading(false));
-  }, [monthKey, serverId]);
+  }, [monthKey, channelId]);
 
   const submissionByDate = Object.fromEntries(
     submissions.map(s => [s.date.slice(0, 10), s])
@@ -61,10 +61,9 @@ export default function Calendar({ serverId, challengeType }: { serverId: string
       await fetch('/api/submissions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: edit.date, type: edit.type || challengeType, count: Number(edit.count), serverId }),
+        body: JSON.stringify({ date: edit.date, type: edit.type || challengeType, count: Number(edit.count), channelId }),
       });
-      // Refresh
-      const data = await fetch(`/api/submissions?month=${monthKey}&serverId=${serverId}`).then(r => r.json());
+      const data = await fetch(`/api/submissions?month=${monthKey}&channelId=${channelId}`).then(r => r.json());
       setSubmissions(data.submissions ?? []);
       setEdit(null);
     } finally {
@@ -77,7 +76,7 @@ export default function Calendar({ serverId, challengeType }: { serverId: string
     setSaving(true);
     try {
       await fetch(`/api/submissions/${edit.submissionId}`, { method: 'DELETE' });
-      const data = await fetch(`/api/submissions?month=${monthKey}&serverId=${serverId}`).then(r => r.json());
+      const data = await fetch(`/api/submissions?month=${monthKey}&channelId=${channelId}`).then(r => r.json());
       setSubmissions(data.submissions ?? []);
       setEdit(null);
     } finally {

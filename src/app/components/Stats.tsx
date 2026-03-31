@@ -20,16 +20,16 @@ interface StatsData {
   history: { date: string; count: number; type: string }[];
 }
 
-export default function Stats({ serverId }: { serverId: string }) {
+export default function Stats({ channelId }: { channelId: string }) {
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/stats?serverId=${serverId}`)
+    fetch(`/api/stats?channelId=${channelId}`)
       .then(r => r.json())
       .then(setData)
       .finally(() => setLoading(false));
-  }, [serverId]);
+  }, [channelId]);
 
   if (loading) return <p>Loading stats...</p>;
   if (!data) return <p>Could not load stats.</p>;
@@ -57,7 +57,7 @@ export default function Stats({ serverId }: { serverId: string }) {
 
       {chartData.length > 1 && (
         <>
-          <h3>Push-ups over time</h3>
+          <h3>Activity over time</h3>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={chartData}>
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />

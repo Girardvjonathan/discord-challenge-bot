@@ -3,13 +3,13 @@ import { postDailyResults } from '../jobs/dailyResults';
 
 export const data = new SlashCommandBuilder()
   .setName('results')
-  .setDescription('Manually post today\'s push-up results (for testing)');
+  .setDescription('Post today\'s results for this channel\'s challenge');
 
 export async function handleResults(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
-    await postDailyResults(interaction.client);
+    await postDailyResults(interaction.client, interaction.channelId);
     await interaction.editReply('Results posted!');
   } catch (err) {
     console.error('[results] error:', err);

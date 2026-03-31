@@ -40,7 +40,6 @@ export const data = new SlashCommandBuilder()
 export async function handleStartChallenge(interaction: ChatInputCommandInteraction) {
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-  const guildId = interaction.guildId!;
   const discordChannel = interaction.channel as TextChannel;
   const type = interaction.options.getString('type', true);
   const customName = interaction.options.getString('name')?.trim();
@@ -55,19 +54,19 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
 
   try {
     await prisma.channel.upsert({
-      where: { guildId },
+      where: { discordChannelId: discordChannel.id },
       update: {
-        channelId: discordChannel.id,
-        channelName: discordChannel.name,
+        guildName: interaction.guild!.name,
+        name: discordChannel.name,
         challengeType: type,
         challengeName: displayName,
         challengeActive: true,
       },
       create: {
-        guildId,
-        name: interaction.guild!.name,
-        channelId: discordChannel.id,
-        channelName: discordChannel.name,
+        discordChannelId: discordChannel.id,
+        guildId: interaction.guildId!,
+        guildName: interaction.guild!.name,
+        name: discordChannel.name,
         challengeType: type,
         challengeName: displayName,
         challengeActive: true,

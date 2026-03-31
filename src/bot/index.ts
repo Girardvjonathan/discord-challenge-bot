@@ -19,49 +19,36 @@ client.once('clientReady', async (c) => {
   await bootstrapGuilds(c);
 });
 
-async function setupGuild(guild: import('discord.js').Guild, announce = false) {
-  await prisma.channel.upsert({
-    where: { guildId: guild.id },
-    update: { name: guild.name },
-    create: { guildId: guild.id, name: guild.name },
-  });
+async function announceGuild(guild: import('discord.js').Guild) {
+  const defaultChannel = guild.systemChannel ??
+    guild.channels.cache.find(
+      (c) => c.isTextBased() && c.permissionsFor(guild.members.me!)?.has('SendMessages')
+    ) as TextChannel | undefined;
 
-  if (announce) {
-    const defaultChannel = guild.systemChannel ??
-      guild.channels.cache.find(
-        (c) => c.isTextBased() && c.permissionsFor(guild.members.me!)?.has('SendMessages')
-      ) as TextChannel | undefined;
-
-    await defaultChannel?.send(
-      `👋 **Challenge Bot is here!**\n\nAn admin can run **/start_challenge** in any channel to kick things off.`
-    );
-  }
+  await defaultChannel?.send(
+    `👋 **Challenge Bot is here!**\n\nAn admin can run **/start_challenge** in any channel to kick things off.`
+  );
 }
 
 async function bootstrapGuilds(c: import('discord.js').Client<true>) {
   for (const guild of c.guilds.cache.values()) {
-    try {
-      await setupGuild(guild);
-      console.log(`[bootstrap] set up guild: ${guild.name}`);
-    } catch (err) {
-      console.error(`[bootstrap] error for guild ${guild.name}:`, err);
-    }
+    console.log(`[bootstrap] connected to guild: ${guild.name}`);
   }
 }
 
-// Bootstrap channel record when bot is added to a guild
+// Send welcome message when bot is added to a new guild
 client.on('guildCreate', async (guild) => {
   try {
-    await setupGuild(guild, true);
+    await announceGuild(guild);
   } catch (err) {
     console.error('[guildCreate] error:', err);
   }
 });
 
-// Deactivate challenge when bot is removed, preserving history
+// Deactivate all challenge channels when bot is removed from a guild
 client.on('guildDelete', async (guild) => {
   try {
-    await prisma.channel.update({
+    await prisma.channel.updateMany({
       where: { guildId: guild.id },
       data: { challengeActive: false },
     });

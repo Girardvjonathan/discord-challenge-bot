@@ -8,10 +8,10 @@ import { prisma } from '../../lib/prisma';
  *  - For /pushup, /situp, /pullup: pass the fixed type ("pushup" etc.)
  *  - For /log: pass null → resolved from the channel's challenge
  *
- * Challenge matching:
- *  - channel.challengeType === activityType      (e.g. "pushup" challenge + pushup activity)
+ * Challenge matching (across all channels the user is in):
+ *  - channel.challengeType === activityType
  *  - channel.challengeType === "other" AND channel.challengeName.toLowerCase() === activityType
- *  - channel.challengeType === "any"             (matches everything)
+ *  - channel.challengeType === "any" (matches everything)
  */
 export async function logSubmission(
   interaction: ChatInputCommandInteraction,
@@ -27,7 +27,7 @@ export async function logSubmission(
 
   try {
     const channel = await prisma.channel.findUnique({
-      where: { guildId: interaction.guildId },
+      where: { discordChannelId: interaction.channelId },
     });
 
     // Resolve activity type from channel challenge when not explicitly provided
@@ -36,7 +36,7 @@ export async function logSubmission(
       resolvedType = activityType;
     } else {
       if (!channel?.challengeActive || !channel.challengeType) {
-        await interaction.editReply('No active challenge in this server. An admin needs to run **/start_challenge** first.');
+        await interaction.editReply('No active challenge in this channel. An admin needs to run **/start_challenge** first.');
         return;
       }
       if (channel.challengeType === 'any') {
@@ -82,7 +82,7 @@ export async function logSubmission(
       create: { userId: user.id, type: resolvedType, count, date: today },
     });
 
-    // Find all active challenges across the user's channels that match this activity
+    // Find all active challenge channels the user is in that match this activity
     const memberships = await prisma.channelUser.findMany({
       where: { userId: user.id },
       include: { channel: true },

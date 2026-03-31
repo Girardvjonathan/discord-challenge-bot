@@ -17,19 +17,19 @@ model User {
   channels             ChannelUser[]
 }
 
-// One record per Discord guild. Tracks which channel the challenge runs in
-// and the active challenge configuration (flattened from former Challenge model).
+// One record per Discord channel where a challenge is configured.
+// A guild can have multiple challenge channels.
 model Channel {
-  id              String        @id @default(cuid())
-  guildId         String        @unique
-  name            String
-  channelId       String?       // Discord channel ID where results are posted
-  channelName     String?
-  challengeType   String?       // pushup | situp | pullup | any | other
-  challengeName   String?       // display name; required when challengeType = "other"
-  challengeActive Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  users           ChannelUser[]
+  id               String        @id @default(cuid())
+  discordChannelId String        @unique  // Discord channel ID (unique key, also where results are posted)
+  guildId          String                 // Discord guild/server ID
+  guildName        String                 // Discord server name
+  name             String                 // Discord channel name (e.g. "pushup-challenge")
+  challengeType    String?       // pushup | situp | pullup | any | other
+  challengeName    String?       // display name; required when challengeType = "other"
+  challengeActive  Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  users            ChannelUser[]
 }
 
 model ChannelUser {
