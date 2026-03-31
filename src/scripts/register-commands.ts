@@ -6,6 +6,7 @@ import { data as pullupCommand } from '../bot/commands/pullup';
 import { data as logCommand } from '../bot/commands/log';
 import { data as resultsCommand } from '../bot/commands/results';
 import { data as startChallengeCommand } from '../bot/commands/startChallenge';
+import { data as openStatsCommand } from '../bot/commands/openStats';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ const commands = [
   logCommand.toJSON(),
   resultsCommand.toJSON(),
   startChallengeCommand.toJSON(),
+  openStatsCommand.toJSON(),
 ];
 
 const rest = new REST().setToken(token);
