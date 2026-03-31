@@ -2,7 +2,7 @@
 
 ## Context
 
-Foundation already in place: Prisma schema (5 models), Discord bot scaffold, NextAuth Discord OAuth, cron scheduler stubs, and a bare Next.js admin route. The gaps are in connecting everything together — persisting data, building the UI, and wiring up the bot lifecycle.
+A Discord challenge bot with a Next.js admin dashboard. Users log daily activities via slash commands, the bot posts daily results per channel, and the web dashboard shows global personal stats, streaks, and a multi-activity calendar.
 
 ---
 
@@ -10,129 +10,106 @@ Foundation already in place: Prisma schema (5 models), Discord bot scaffold, Nex
 
 ### Phase 1 — Database & Environment ✅
 
-**Task 1 — Finalize Prisma schema & run initial migration** ✅
-- Add any missing fields (e.g. `notificationsEnabled` on `User`, `channelId` on `Server` so the bot knows where to post)
-- Run `prisma migrate dev --name init`
-- Commit migration files
+**Task 1 — Prisma schema & migrations** ✅
+- Models: `User`, `Channel` (per Discord channel, unique by `discordChannelId`), `ChannelUser`, `ActivityLog`
+- `Channel` holds flattened challenge config: `challengeType`, `challengeName`, `challengeActive`
+- `ActivityLog` unique on `(userId, type, date)` — one entry per user per activity type per day
+- Prisma v7 with `@prisma/adapter-pg`; `prisma.config.ts` holds `DIRECT_URL` for CLI
 
 **Task 2 — Register Discord slash commands** ✅
-- Create a one-off script (`src/scripts/register-commands.ts`) that calls the Discord REST API to register `/pushup` globally (or per-guild during dev)
-- Add `npm run register` script to `package.json`
-- Must run once after any command definition changes
+- Script at `src/scripts/register-commands.ts`
+- `npm run register` — guild-scoped if `DISCORD_GUILD_ID` is set, otherwise global
+- Commands: `/pushup`, `/situp`, `/pullup`, `/submit_challenge_activity`, `/challenge_daily_result`, `/start_challenge`
 
 ---
 
-### Phase 2 — Bot Core Logic
+### Phase 2 — Bot Core Logic ✅
 
-**Task 3 — Persist submission on `/pushup`** ✅
-- On `/pushup <count>`, upsert a `Submission` row for `(userId, challengeId, today)`
-- Auto-create `User` and `ServerUser` rows on first interaction (discord ID is available from interaction)
-- Enforce the one-submission-per-day rule; if already submitted, update count and reply accordingly
-- Reply ephemerally with confirmation
+**Task 3 — Activity logging** ✅
+- `/pushup`, `/situp`, `/pullup` log fixed types; `/submit_challenge_activity` resolves type from the channel's active challenge
+- Shared `logSubmission()` handles upsert, `ChannelUser` enrollment, and cross-challenge fan-out
+- One-submission-per-day-per-type rule enforced by DB unique constraint; updates count if already logged
+- Replies ephemerally with confirmation and list of matching challenges
 
-**Task 4 — Guild join handler (bot added to server)** ✅
-- Listen for `guildCreate` event
-- Create a `Server` row and a default `Challenge` (type: pushup, active: true)
-- Store `channelId` of the system/default channel for posting results
-- Post a welcome message with the registration link
-- Bootstrap existing guilds on `clientReady` so setup isn't missed on restart
+**Task 4 — Guild lifecycle handlers** ✅
+- `guildCreate`: posts welcome message to default channel
+- `guildDelete`: deactivates all `Channel` records for the guild via `updateMany`
+- `clientReady`: logs connected guilds
 
-**Task 5 — Daily 5 PM result post**
-- Fill in the scheduler stub: query all submissions for today across active challenges
-- Format a ranked result message and post to each server's channel
-- Handle the "no submissions today" edge case gracefully
+**Task 5 — Daily result post** ✅
+- Cron at 5 PM via `node-cron`; also triggerable with `/challenge_daily_result` (scoped to current channel)
+- Specific type challenges: ranked by total count, medals for top 3
+- "Any activities" challenges: submission count, 5 recent entries (one per user), streak leaderboard (top 5, global streak, consecutive days)
+- Each Discord channel gets its own independent results post
 
-**Task 6 — Opt-in DM notifications**
-- Add `/notify on|off` command for users to toggle `notificationsEnabled`
-- At a configurable time each morning, DM opted-in users a reminder to log their push-ups
-
----
-
-### Phase 3 — Web Registration & Auth
-
-**Task 7 — Registration landing page**
-- Add a "Sign in with Discord" button on the home page using NextAuth's `signIn()`
-- After OAuth callback, upsert the `User` record in the DB from the session `discordId`
-- Redirect to `/admin` on success
-
-**Task 8 — Auth guard on `/admin`**
-- Check session server-side; redirect to `/` if unauthenticated
-- Handle the multi-server case: if user belongs to one server, auto-select it; if multiple, show a server picker
+**Task 6 — Opt-in DM notifications** ⬜
+- `/notify on|off` command to toggle `notificationsEnabled`
+- Morning DM reminders for opted-in users
 
 ---
 
-### Phase 4 — Admin Dashboard
+### Phase 3 — Web Registration & Auth ✅
 
-**Task 9 — API routes for dashboard data**
-These are needed before building the UI components:
-- `GET /api/submissions?month=YYYY-MM` — returns user's submissions for the given month (calendar view)
-- `GET /api/stats` — returns total push-ups, last month vs this month delta
-- `POST /api/submissions` — create/update a submission (for corrections)
-- `DELETE /api/submissions/:id` — remove a submission
+**Task 7 — Sign-in landing page** ✅
+- "Sign in with Discord" via NextAuth v5 on the home page
+- Redirects to `/admin` on success
 
-**Task 10 — Calendar view**
-- Render a monthly calendar grid; highlight days with a check-in
-- Clicking a day opens an edit modal (uses `POST /api/submissions`)
+**Task 8 — Auth guard & session** ✅
+- Server-side session check on `/admin`; redirects to `/` if unauthenticated
+- Discord snowflake ID stored via JWT callback (`profile.id` → `token.discordId`)
 
-**Task 11 — Stats panel**
-- Total push-ups (all time)
-- Last month vs this month comparison (% delta)
-- Line chart over time using Recharts (`<LineChart>` with date on X-axis, count on Y-axis)
+---
 
-**Task 12 — Leaderboard table on admin**
-- Tabbed view: weekly / monthly
-- Two columns: push-up count, check-in count
-- Highlight the current user's row
+### Phase 4 — Admin Dashboard ✅
+
+**Task 9 — API routes** ✅
+- `GET /api/stats` — global streak, check-in counts, per-type totals
+- `GET /api/activity-history?type=` — history data for chart
+- `GET /api/activity-types` — distinct types the user has logged (for calendar dropdown)
+- `GET /api/submissions?month=YYYY-MM` — all logs for the month
+- `POST /api/submissions` — create/update a log entry
+- `DELETE /api/submissions/:id` — remove a log entry
+
+**Task 10 — Calendar view** ✅
+- Monthly grid; days with any activity show a blue dot
+- Click a day → modal lists all activities for that day
+- Edit counts, delete individual activities, add new via dropdown of known types (+ "Custom…" option)
+
+**Task 11 — Stats panel** ✅
+- Streak badge (counts from today or yesterday if today not yet logged)
+- Check-in stat cards: total, this month, last month (with % delta)
+- Activity type total cards (clickable to update chart)
+- Progression line chart with type dropdown
 
 ---
 
 ### Phase 5 — Polish & Reliability
 
-**Task 13 — Error handling & input validation**
-- Wrap all Discord interaction handlers in try/catch; reply with a user-friendly error if something fails
-- Validate `count` range on `/pushup` (already has `min: 1`, add a sane max e.g. 10,000)
-- Handle DB connection errors gracefully at startup
+**Task 13 — Error handling & input validation** ✅ (partial)
+- All interaction handlers wrapped in try/catch with user-friendly replies
+- Count range enforced (`min: 1`, `max: 1,000,000`) on all log commands
+- Remaining: startup env var validation; DB connection error handling
 
-**Task 14 — Environment & deployment config**
-- Update `.env.example` with all required vars (DATABASE_URL, DISCORD_TOKEN, DISCORD_CLIENT_ID/SECRET, NEXTAUTH_SECRET, NEXTAUTH_URL)
-- Add a startup check that fails fast with a clear message if required env vars are missing
+**Task 14 — Environment & deployment config** ⬜
+- Add `.env.example` with all required vars
+- Add startup check that fails fast with a clear message if required vars are missing
 
 ---
 
 ### Phase 6 — Leaderboard Posts
 
-**Task 15 — Weekly leaderboard (Sundays 8 PM)**
-- Fill in scheduler stub: aggregate submissions for the current week
-- Post two columns: total push-up count and total check-ins (days submitted)
-- Reuse a shared `formatLeaderboard()` helper (also used by monthly)
+**Task 15 — Weekly leaderboard (Sundays 8 PM)** ⬜
+- Aggregate activity logs for the current week per server channel
+- Post two columns: total count and total check-ins (days logged)
 
-**Task 16 — Monthly leaderboard (1st of month 8 PM)**
+**Task 16 — Monthly leaderboard (1st of month 8 PM)** ⬜
 - Same as Task 15 but scoped to the previous calendar month
-- Re-use `formatLeaderboard()` helper
 
 ---
 
-## Risks & Edge Cases
+## Known Issues / Improvements
 
-### Data integrity
-- **Duplicate submissions**: The `@@unique([userId, challengeId, date])` constraint handles this at the DB level, but the bot should still catch and explain the conflict to the user rather than throwing a raw error.
-- **Timezone mismatches**: "Today" and "5 PM" are ambiguous — the cron jobs and date comparisons must all use a consistent timezone (store a `timezone` on `Server` or standardize on UTC with a configurable offset).
-
-### Discord API limits
-- **Slash command registration**: Global commands take up to 1 hour to propagate. During development, register to a specific guild instead.
-- **Rate limits**: If many servers are active, posting leaderboards simultaneously could hit Discord's rate limits. Add a small delay between per-server posts.
-- **DM failures**: Users can have DMs disabled. The notification sender must catch `DiscordAPIError` code `50007` and silently skip rather than crashing.
-
-### Multi-server / multi-challenge
-- A user in multiple servers will have multiple `ServerUser` rows. The admin dashboard needs to scope all queries by `(userId, serverId)` — don't leak data across servers.
-- The `/pushup` command must resolve *which* challenge to log against. If a guild has one active challenge this is trivial; guard against the case where none exist (bot was removed and re-added, or challenge was deactivated).
-
-### Scheduler reliability
-- `node-cron` jobs are in-process and will be missed if the bot restarts at 5 PM. For production, consider persisting a "daily result posted" flag per server per day so a restart doesn't double-post or skip.
-
-### Auth & session
-- NextAuth Discord tokens expire. Ensure the session refresh is handled and that the `discordId` is always propagated into the session (already done in the auth route, but verify after next-auth beta updates).
-- `/admin` must validate that the authenticated user actually belongs to the selected server before returning any data.
-
-### Bot removal
-- When the bot is kicked (`guildDelete` event), mark the `Server` and its `Challenge` as inactive rather than deleting rows, so historical data is preserved if the bot is re-added.
+- Streak shown on dashboard is not recalculated when editing past entries via the calendar
+- `node-cron` jobs are in-process — a restart at 5 PM could miss a daily post; consider a "posted today" flag per channel
+- DM notifications (Task 6) not yet implemented
+- No `.env.example` file yet
