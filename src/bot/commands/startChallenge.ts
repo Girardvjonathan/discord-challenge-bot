@@ -38,10 +38,11 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function handleStartChallenge(interaction: ChatInputCommandInteraction) {
-  const discordChannel = interaction.channel as TextChannel;
+  const channelId = interaction.channelId;
+  const channelName = (interaction.channel as TextChannel | null)?.name ?? channelId;
   const type = interaction.options.getString('type', true);
   const customName = interaction.options.getString('name')?.trim();
-  console.log(`[start_challenge] user=${interaction.user.username} guild=${interaction.guildId} channel=${discordChannel.name} type=${type} customName=${customName ?? 'none'}`);
+  console.log(`[start_challenge] user=${interaction.user.username} guild=${interaction.guildId} channel=${channelName} type=${type} customName=${customName ?? 'none'}`);
 
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
@@ -56,39 +57,40 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
 
   try {
     await prisma.channel.upsert({
-      where: { discordChannelId: discordChannel.id },
+      where: { discordChannelId: channelId },
       update: {
         guildName: interaction.guild!.name,
-        name: discordChannel.name,
+        name: channelName,
         challengeType: type,
         challengeName: displayName,
         challengeActive: true,
       },
       create: {
-        discordChannelId: discordChannel.id,
+        discordChannelId: channelId,
         guildId: interaction.guildId!,
         guildName: interaction.guild!.name,
-        name: discordChannel.name,
+        name: channelName,
         challengeType: type,
         challengeName: displayName,
         challengeActive: true,
       },
     });
 
-    console.log(`[start_challenge] upserted channel=${discordChannel.id} name=${displayName} type=${type}`);
+    console.log(`[start_challenge] upserted channel=${channelId} name=${displayName} type=${type}`);
     await interaction.editReply(
-      `**${displayName}** challenge started! Results will be posted in <#${discordChannel.id}> every day at 5 PM.`
+      `**${displayName}** challenge started! Results will be posted in <#${channelId}> every day at 5 PM.`
     );
 
     const logInstruction = type === 'any'
       ? 'Use **/pushup**, **/situp**, **/pullup**, or **/submit_challenge_activity** each day to log any activity.'
       : `Use **${typeInfo.command} <count>** each day to log your ${displayName.toLowerCase()}.`;
 
-    await discordChannel.send(
+    const textChannel = interaction.channel as TextChannel | null;
+    await textChannel?.send(
       `🏋️ **Daily ${displayName} Challenge has started!**\n\n` +
       `${logInstruction}\n` +
       `Results are posted here every day at 5 PM and leaderboards every Sunday.\n\n` +
-      `Register your account to track your full stats: ${process.env.NEXTAUTH_URL}`
+      `Register your account to track your full stats: ${process.env.NEXTAUTH_URL ?? process.env.AUTH_URL}`
     );
   } catch (err) {
     console.error('[startChallenge] error:', err);

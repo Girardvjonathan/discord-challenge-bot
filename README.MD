@@ -1,21 +1,82 @@
 # Discord Challenge Bot
 
-Run daily fitness challenges in any Discord channel. Log activities, track personal streaks, and post automatic leaderboards. Multiple challenges can run simultaneously across different channels in the same server.
-
-## Features
-
-- **Multiple challenge types** — Push-ups, sit-ups, pull-ups, any activities (open to all types), or a fully custom activity
-- **Per-channel challenges** — Each Discord channel can host its own independent challenge
-- **Activity logging** — Log via dedicated commands (`/pushup`, `/situp`, `/pullup`) or the generic `/submit_challenge_activity` for custom types
-- **Cross-challenge fan-out** — A single log automatically contributes to every challenge the user is enrolled in that matches the activity type
-- **Daily results** — Posted automatically at 5 PM, or triggered manually with `/challenge_daily_result`
-- **Streak tracking** — "Any activities" challenges rank members by consecutive days contributed (global streak)
-- **Web dashboard** — Sign in with Discord to view a monthly check-in calendar, fix past entries, and see stats (total count, this month vs last month, activity chart)
-- **Multi-server support** — Users can participate in challenges across multiple servers; the dashboard auto-selects if only one challenge exists
+Run daily fitness challenges in any Discord channel. Log activities, track personal streaks, and compete on automatic leaderboards.
 
 ---
 
-## Setup
+## Getting Started
+
+### 1. Add the bot to your server
+
+[Click here to invite the bot](https://discord.com/oauth2/authorize?client_id=1488172162887192718)
+
+### 2. Start a challenge in a channel
+
+Go to the channel where you want the challenge to run and type:
+
+```
+/start_challenge
+```
+
+Choose a challenge type:
+
+| Type | Description |
+|------|-------------|
+| `Push-ups` | Members log push-ups daily |
+| `Sit-ups` | Members log sit-ups daily |
+| `Pull-ups` | Members log pull-ups daily |
+| `Any activities` | All activity types count; leaderboard ranks by streak |
+| `Other` | Custom activity (e.g. "Walking", "Steps") |
+
+> Only members with **Manage Server** permission can run `/start_challenge`.
+> Each channel can have its own independent challenge — you can run multiple challenges in the same server.
+
+### 3. Log your activity
+
+Use one of the logging commands each day to submit your count:
+
+| Command | Description |
+|---------|-------------|
+| `/pushup <count>` | Log push-ups for today |
+| `/situp <count>` | Log sit-ups for today |
+| `/pullup <count>` | Log pull-ups for today |
+| `/submit_challenge_activity <count>` | Log activity for custom or open challenges |
+
+Your submission automatically counts toward every challenge you're enrolled in that matches the activity type.
+
+---
+
+## Daily Results
+
+Results are **posted automatically every day at 5 PM UTC** in each challenge channel.
+
+You can also trigger them manually at any time:
+
+```
+/challenge_daily_result
+```
+
+---
+
+## Web Dashboard
+
+Track your personal stats at any time:
+
+```
+/open_my_challenge_stats
+```
+
+This sends you a private link to your dashboard where you can:
+
+- View your **current streak** and check-in stats
+- Browse a **monthly calendar** of all your logged activities
+- Add, edit, or delete past entries
+- See a **progression chart** per activity type
+
+---
+
+<details>
+<summary><strong>Developer & Deployment Guide</strong></summary>
 
 ### Prerequisites
 
@@ -46,8 +107,8 @@ DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
 
 # Web app
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=a_random_secret
+AUTH_URL=http://localhost:3000
+AUTH_SECRET=a_random_secret
 ```
 
 ### 3. Set up the database
@@ -64,59 +125,42 @@ npm run register
 
 > If `DISCORD_GUILD_ID` is set, commands register instantly to that guild. Without it, global registration can take up to 1 hour.
 
-### 5. Run the bot
+### 5. Run
 
+**Bot only:**
 ```bash
 npm run dev:bot
 ```
 
-### 6. Run the web app
+**Web app only:**
+```bash
+npm run dev:web
+```
 
+**Both together:**
 ```bash
 npm run dev
 ```
 
----
+### Deployment
 
-## Bot Commands
+The bot and web app are deployed separately:
 
-| Command | Permission | Description |
-|---------|-----------|-------------|
-| `/start_challenge` | Manage Server | Start a challenge in the current channel |
-| `/pushup count` | Everyone | Log push-ups for today |
-| `/situp count` | Everyone | Log sit-ups for today |
-| `/pullup count` | Everyone | Log pull-ups for today |
-| `/submit_challenge_activity count` | Everyone | Log activity resolved from the channel's challenge type |
-| `/challenge_daily_result` | Everyone | Manually post today's results for this channel |
+- **Web app** — Deploy to [Vercel](https://vercel.com). Set all env vars in the Vercel dashboard. Build command: `prisma generate && next build`.
+- **Bot** — Self-host on a Linux server (Debian recommended). Use [PM2](https://pm2.keymetrics.io/) to keep the process alive:
 
-### `/start_challenge` options
+```bash
+npm run build:bot
+pm2 start dist/bot/index.js --name discord-bot
+pm2 save
+pm2 startup
+```
 
-| Type | Behaviour |
-|------|-----------|
-| `Push-ups` | Only push-up logs count |
-| `Sit-ups` | Only sit-up logs count |
-| `Pull-ups` | Only pull-up logs count |
-| `Any activities` | All activity types count; daily results show a streak leaderboard |
-| `Other` | Custom activity name (e.g. "Walking"); use `/submit_challenge_activity` to log |
+### Tech Stack
 
----
-
-## Web Dashboard
-
-1. Navigate to `NEXTAUTH_URL/admin`
-2. Sign in with Discord
-3. If enrolled in multiple challenge channels, select one from the picker
-4. View your **check-in calendar** — click any day to add, edit, or delete an entry
-5. View **stats** — total count, this month vs last month, and an activity chart over time
-
----
-
-## Tech Stack
-
-- **Bot** — Discord.js v14, TypeScript, ts-node
+- **Bot** — Discord.js v14, TypeScript
 - **Web** — Next.js 16 (App Router), NextAuth v5
 - **Database** — PostgreSQL via Prisma v7 with `@prisma/adapter-pg`
 - **Auth** — Discord OAuth2
 
-# Know bugs/improvement area
-Streak calculation could be improved and modifying your activities in the admin might not change your streak/re-calculate
+</details>
