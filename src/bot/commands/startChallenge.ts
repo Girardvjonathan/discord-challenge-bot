@@ -8,10 +8,11 @@ import {
 import { prisma } from '../../lib/prisma';
 
 const CHALLENGE_TYPES = [
-  { name: 'Push-ups',  value: 'pushup',  command: '/pushup' },
-  { name: 'Sit-ups',   value: 'situp',   command: '/situp'  },
-  { name: 'Pull-ups',  value: 'pullup',  command: '/pullup' },
-  { name: 'Other',     value: 'other',   command: '/log'    },
+  { name: 'Push-ups',       value: 'pushup',  command: '/pushup' },
+  { name: 'Sit-ups',        value: 'situp',   command: '/situp'  },
+  { name: 'Pull-ups',       value: 'pullup',  command: '/pullup' },
+  { name: 'Any activities', value: 'any',     command: '/pushup, /situp, /pullup or /log' },
+  { name: 'Other',          value: 'other',   command: '/log'    },
 ];
 
 export const data = new SlashCommandBuilder()
@@ -23,10 +24,11 @@ export const data = new SlashCommandBuilder()
       .setDescription('Type of challenge')
       .setRequired(true)
       .addChoices(
-        { name: 'Push-ups',  value: 'pushup' },
-        { name: 'Sit-ups',   value: 'situp'  },
-        { name: 'Pull-ups',  value: 'pullup' },
-        { name: 'Other',     value: 'other'  },
+        { name: 'Push-ups',       value: 'pushup' },
+        { name: 'Sit-ups',        value: 'situp'  },
+        { name: 'Pull-ups',       value: 'pullup' },
+        { name: 'Any activities', value: 'any'    },
+        { name: 'Other',          value: 'other'  },
       )
   )
   .addStringOption(o =>
@@ -80,9 +82,13 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
       `**${displayName}** challenge started! Results will be posted in <#${channel.id}> every day at 5 PM.`
     );
 
+    const logInstruction = type === 'any'
+      ? 'Use **/pushup**, **/situp**, **/pullup**, or **/log** each day to log any activity.'
+      : `Use **${typeInfo.command} <count>** each day to log your ${displayName.toLowerCase()}.`;
+
     await channel.send(
       `🏋️ **Daily ${displayName} Challenge has started!**\n\n` +
-      `Use **${typeInfo.command} <count>** each day to log your ${displayName.toLowerCase()}.\n` +
+      `${logInstruction}\n` +
       `Results are posted here every day at 5 PM and leaderboards every Sunday.\n\n` +
       `Register your account to track your full stats: ${process.env.NEXTAUTH_URL}`
     );
