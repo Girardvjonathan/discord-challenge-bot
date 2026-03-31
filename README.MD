@@ -44,7 +44,6 @@ DIRECT_URL=postgresql://...          # Direct connection (port 5432 on Supabase)
 DISCORD_TOKEN=your_bot_token
 DISCORD_CLIENT_ID=your_client_id
 DISCORD_CLIENT_SECRET=your_client_secret
-DISCORD_GUILD_ID=your_guild_id       # Optional: scopes commands to one guild (instant registration)
 
 # Web app
 NEXTAUTH_URL=http://localhost:3000
