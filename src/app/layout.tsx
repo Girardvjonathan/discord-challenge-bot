@@ -3,7 +3,8 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Challenge Bot',
-  description: 'Daily push-up challenge tracker',
+  description: 'Daily challenge tracker',
+  icons: { icon: '/logo.jpg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
