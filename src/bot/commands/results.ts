@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder } from '
 import { postDailyResults } from '../jobs/dailyResults';
 
 export const data = new SlashCommandBuilder()
-  .setName('results')
+  .setName('challenge_daily_result')
   .setDescription('Post today\'s results for this channel\'s challenge');
 
 export async function handleResults(interaction: ChatInputCommandInteraction) {

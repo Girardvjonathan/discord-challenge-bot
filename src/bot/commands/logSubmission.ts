@@ -40,7 +40,7 @@ export async function logSubmission(
         return;
       }
       if (channel.challengeType === 'any') {
-        await interaction.editReply('This is an open challenge — please use a specific command: `/pushup`, `/situp`, or `/pullup`.');
+        await interaction.editReply('This is an open challenge — please use a specific command: `/pushup`, `/situp`, `/pullup`, or `/submit_challenge_activity`.');
         return;
       }
       // For "other" challenges, use the challenge name as the activity identifier

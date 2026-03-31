@@ -71,10 +71,10 @@ client.on('interactionCreate', async (interaction) => {
   } else if (commandName === 'pullup') {
     const { handlePullup } = await import('./commands/pullup');
     await handlePullup(interaction);
-  } else if (commandName === 'log') {
+  } else if (commandName === 'submit_challenge_activity') {
     const { handleLog } = await import('./commands/log');
     await handleLog(interaction);
-  } else if (commandName === 'results') {
+  } else if (commandName === 'challenge_daily_result') {
     const { handleResults } = await import('./commands/results');
     await handleResults(interaction);
   } else if (commandName === 'start_challenge') {

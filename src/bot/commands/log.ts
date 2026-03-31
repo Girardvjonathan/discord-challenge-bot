@@ -2,8 +2,8 @@ import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { logSubmission } from './logSubmission';
 
 export const data = new SlashCommandBuilder()
-  .setName('log')
-  .setDescription('Log your activity for today (type resolved from channel challenge)')
+  .setName('submit_challenge_activity')
+  .setDescription('Submit your activity for today (type resolved from channel challenge)')
   .addIntegerOption(o =>
     o.setName('count')
       .setDescription('Amount to log')

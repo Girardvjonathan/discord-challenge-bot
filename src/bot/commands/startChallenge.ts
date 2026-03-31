@@ -11,8 +11,8 @@ const CHALLENGE_TYPES = [
   { name: 'Push-ups',       value: 'pushup',  command: '/pushup' },
   { name: 'Sit-ups',        value: 'situp',   command: '/situp'  },
   { name: 'Pull-ups',       value: 'pullup',  command: '/pullup' },
-  { name: 'Any activities', value: 'any',     command: '/pushup, /situp, /pullup or /log' },
-  { name: 'Other',          value: 'other',   command: '/log'    },
+  { name: 'Any activities', value: 'any',     command: '/pushup, /situp, /pullup or /submit_challenge_activity' },
+  { name: 'Other',          value: 'other',   command: '/submit_challenge_activity' },
 ];
 
 export const data = new SlashCommandBuilder()
@@ -78,7 +78,7 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
     );
 
     const logInstruction = type === 'any'
-      ? 'Use **/pushup**, **/situp**, **/pullup**, or **/log** each day to log any activity.'
+      ? 'Use **/pushup**, **/situp**, **/pullup**, or **/submit_challenge_activity** each day to log any activity.'
       : `Use **${typeInfo.command} <count>** each day to log your ${displayName.toLowerCase()}.`;
 
     await discordChannel.send(
