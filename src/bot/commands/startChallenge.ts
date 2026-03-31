@@ -38,13 +38,15 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function handleStartChallenge(interaction: ChatInputCommandInteraction) {
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
   const discordChannel = interaction.channel as TextChannel;
   const type = interaction.options.getString('type', true);
   const customName = interaction.options.getString('name')?.trim();
+  console.log(`[start_challenge] user=${interaction.user.username} guild=${interaction.guildId} channel=${discordChannel.name} type=${type} customName=${customName ?? 'none'}`);
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   if (type === 'other' && !customName) {
+    console.log(`[start_challenge] rejected: 'other' type missing custom name`);
     await interaction.editReply('Please provide a **name** for your custom challenge (e.g. `Walking`, `Steps`).');
     return;
   }
@@ -73,6 +75,7 @@ export async function handleStartChallenge(interaction: ChatInputCommandInteract
       },
     });
 
+    console.log(`[start_challenge] upserted channel=${discordChannel.id} name=${displayName} type=${type}`);
     await interaction.editReply(
       `**${displayName}** challenge started! Results will be posted in <#${discordChannel.id}> every day at 5 PM.`
     );

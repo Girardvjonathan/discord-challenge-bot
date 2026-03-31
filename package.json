@@ -10,7 +10,7 @@
     "dev:web": "next dev",
     "dev:bot": "ts-node --project tsconfig.bot.json src/bot/index.ts",
     "build": "prisma generate && next build",
-    "build:bot": "tsc --project tsconfig.bot.json",
+    "build:bot": "prisma generate && tsc --project tsconfig.bot.json",
     "start": "node dist/bot/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

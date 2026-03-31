@@ -9,5 +9,7 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function handleSitup(interaction: ChatInputCommandInteraction) {
-  await logSubmission(interaction, 'situp', interaction.options.getInteger('count', true));
+  const count = interaction.options.getInteger('count', true);
+  console.log(`[situp] user=${interaction.user.username} guild=${interaction.guildId} channel=${interaction.channelId} count=${count}`);
+  await logSubmission(interaction, 'situp', count);
 }

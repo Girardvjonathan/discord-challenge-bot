@@ -9,5 +9,7 @@ export const data = new SlashCommandBuilder()
   );
 
 export async function handlePullup(interaction: ChatInputCommandInteraction) {
-  await logSubmission(interaction, 'pullup', interaction.options.getInteger('count', true));
+  const count = interaction.options.getInteger('count', true);
+  console.log(`[pullup] user=${interaction.user.username} guild=${interaction.guildId} channel=${interaction.channelId} count=${count}`);
+  await logSubmission(interaction, 'pullup', count);
 }

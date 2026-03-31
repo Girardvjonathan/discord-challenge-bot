@@ -6,6 +6,7 @@ import { prisma } from '../../lib/prisma';
  * @param discordChannelId - When provided (e.g. from /results), only posts for that channel.
  */
 export async function postDailyResults(client: Client, discordChannelId?: string) {
+  console.log(`[dailyResults] starting — ${discordChannelId ? `channel=${discordChannelId}` : 'all active channels'}`);
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
@@ -16,18 +17,28 @@ export async function postDailyResults(client: Client, discordChannelId?: string
     },
   });
 
+  console.log(`[dailyResults] found ${channels.length} active channel(s)`);
+
   for (const ch of channels) {
     try {
-      if (!ch.challengeType) continue;
+      if (!ch.challengeType) {
+        console.log(`[dailyResults] skipping channel=${ch.name} — no challengeType set`);
+        continue;
+      }
 
+      console.log(`[dailyResults] processing channel=${ch.name} type=${ch.challengeType}`);
       const discordChannel = await client.channels.fetch(ch.discordChannelId) as TextChannel | null;
-      if (!discordChannel) continue;
+      if (!discordChannel) {
+        console.warn(`[dailyResults] could not fetch discord channel=${ch.discordChannelId}, skipping`);
+        continue;
+      }
 
       const members = await prisma.channelUser.findMany({
         where: { channelId: ch.id },
         include: { user: true },
       });
       const memberIds = members.map(m => m.userId);
+      console.log(`[dailyResults] channel=${ch.name} has ${members.length} member(s)`);
 
       if (ch.challengeType === 'any') {
         await postAnyResults(discordChannel, ch.challengeName!, memberIds, members, today);
@@ -54,6 +65,7 @@ export async function postDailyResults(client: Client, discordChannelId?: string
 
       const ranked = [...byUser.values()].sort((a, b) => b.total - a.total);
 
+      console.log(`[dailyResults] channel=${ch.name} — ${ranked.length} participant(s) logged today`);
       if (ranked.length === 0) {
         await discordChannel.send(`📭 No ${ch.challengeName!.toLowerCase()} logged today. Get after it tomorrow!`);
         continue;
@@ -70,6 +82,7 @@ export async function postDailyResults(client: Client, discordChannelId?: string
         `💪 **Today's ${ch.challengeName} Results**\n\n${lines.join('\n')}\n\n` +
         `**${ranked.length}** participant${ranked.length !== 1 ? 's' : ''} · **${grandTotal}** total`,
       );
+      console.log(`[dailyResults] posted results for channel=${ch.name} participants=${ranked.length} total=${grandTotal}`);
     } catch (err) {
       console.error(`[dailyResults] error for channel ${ch.name}:`, err);
     }
@@ -83,12 +96,14 @@ async function postAnyResults(
   members: { userId: string; user: { username: string } }[],
   today: Date,
 ) {
+  console.log(`[postAnyResults] challenge=${challengeName} members=${memberIds.length} date=${today.toISOString().slice(0, 10)}`);
   const todayLogs = await prisma.activityLog.findMany({
     where: { userId: { in: memberIds }, date: today },
     include: { user: true },
     orderBy: { createdAt: 'desc' },
   });
 
+  console.log(`[postAnyResults] found ${todayLogs.length} log(s) today for challenge=${challengeName}`);
   if (todayLogs.length === 0) {
     await discordChannel.send(`📭 No activity logged today for **${challengeName}**. Get after it tomorrow!`);
     return;
@@ -155,6 +170,7 @@ async function postAnyResults(
 
   const recentLines = featured.map(l => `• **${l.user.username}** — ${l.count} ${l.type}`);
 
+  console.log(`[postAnyResults] submissionCount=${submissionCount} participantCount=${participantCount} top streak=${top5[0]?.username}(${top5[0]?.streak}d)`);
   await discordChannel.send(
     `💪 **${challengeName} — Daily Update**\n\n` +
     `📊 **${submissionCount}** submission${submissionCount !== 1 ? 's' : ''} · **${participantCount}** participant${participantCount !== 1 ? 's' : ''}\n\n` +

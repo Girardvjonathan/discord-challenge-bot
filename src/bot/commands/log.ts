@@ -14,5 +14,6 @@ export const data = new SlashCommandBuilder()
 
 export async function handleLog(interaction: ChatInputCommandInteraction) {
   const count = interaction.options.getInteger('count', true);
+  console.log(`[submit_challenge_activity] user=${interaction.user.username} guild=${interaction.guildId} channel=${interaction.channelId} count=${count}`);
   await logSubmission(interaction, null, count);
 }

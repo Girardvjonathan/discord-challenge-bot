@@ -5,6 +5,7 @@ export const data = new SlashCommandBuilder()
   .setDescription('Get a link to your personal activity dashboard');
 
 export async function handleOpenStats(interaction: ChatInputCommandInteraction) {
+  console.log(`[open_my_challenge_stats] user=${interaction.user.username} guild=${interaction.guildId}`);
   const url = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
   await interaction.reply({
     content: `📊 View your activity stats here: ${url}/admin`,

@@ -23,12 +23,14 @@ export async function logSubmission(
     return;
   }
 
+  console.log(`[logSubmission] user=${interaction.user.username} channel=${interaction.channelId} activityType=${activityType} count=${count}`);
   await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
   try {
     const channel = await prisma.channel.findUnique({
       where: { discordChannelId: interaction.channelId },
     });
+    console.log(`[logSubmission] channel lookup: ${channel ? `found id=${channel.id} type=${channel.challengeType} active=${channel.challengeActive}` : 'not found'}`);
 
     // Resolve activity type from channel challenge when not explicitly provided
     let resolvedType: string;
@@ -36,10 +38,12 @@ export async function logSubmission(
       resolvedType = activityType;
     } else {
       if (!channel?.challengeActive || !channel.challengeType) {
+        console.log(`[logSubmission] no active challenge in channel=${interaction.channelId}`);
         await interaction.editReply('No active challenge in this channel. An admin needs to run **/start_challenge** first.');
         return;
       }
       if (channel.challengeType === 'any') {
+        console.log(`[logSubmission] rejected: open 'any' challenge requires specific command`);
         await interaction.editReply('This is an open challenge — please use a specific command: `/pushup`, `/situp`, `/pullup`, or `/submit_challenge_activity`.');
         return;
       }
@@ -47,6 +51,7 @@ export async function logSubmission(
       resolvedType = channel.challengeType === 'other'
         ? channel.challengeName!.toLowerCase()
         : channel.challengeType;
+      console.log(`[logSubmission] resolved type from channel: ${resolvedType}`);
     }
 
     // Upsert user
@@ -81,6 +86,7 @@ export async function logSubmission(
       update: { count },
       create: { userId: user.id, type: resolvedType, count, date: today },
     });
+    console.log(`[logSubmission] ${existing ? 'updated' : 'created'} activity log: user=${user.id} type=${resolvedType} count=${count} date=${today.toISOString().slice(0, 10)}`);
 
     // Find all active challenge channels the user is in that match this activity
     const memberships = await prisma.channelUser.findMany({
@@ -96,6 +102,8 @@ export async function logSubmission(
         if (ch.challengeType === 'other') return ch.challengeName?.toLowerCase() === resolvedType;
         return ch.challengeType === resolvedType;
       });
+
+    console.log(`[logSubmission] matching challenges: ${matchingChannels.length > 0 ? matchingChannels.map(c => c.name).join(', ') : 'none'}`);
 
     const action = existing ? 'Updated' : 'Logged';
     const challengeList = matchingChannels.length > 0
