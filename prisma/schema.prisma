@@ -7,14 +7,14 @@ datasource db {
 }
 
 model User {
-  id                    String       @id @default(cuid())
-  discordId             String       @unique
-  username              String
-  avatar                String?
-  notificationsEnabled  Boolean      @default(false)
-  createdAt             DateTime     @default(now())
-  submissions           Submission[]
-  servers               ServerUser[]
+  id                   String        @id @default(cuid())
+  discordId            String        @unique
+  username             String
+  avatar               String?
+  notificationsEnabled Boolean       @default(false)
+  createdAt            DateTime      @default(now())
+  activityLogs         ActivityLog[]
+  servers              ServerUser[]
 }
 
 model Server {
@@ -40,24 +40,24 @@ model ServerUser {
 }
 
 model Challenge {
-  id          String       @id @default(cuid())
-  type        String       @default("pushup")
-  active      Boolean      @default(true)
-  server      Server       @relation(fields: [serverId], references: [id])
-  serverId    String
-  createdAt   DateTime     @default(now())
-  submissions Submission[]
+  id        String   @id @default(cuid())
+  type      String   @default("pushup") // pushup | situp | pullup | any
+  name      String   @default("Push-ups")
+  active    Boolean  @default(true)
+  server    Server   @relation(fields: [serverId], references: [id])
+  serverId  String
+  createdAt DateTime @default(now())
 }
 
-model Submission {
-  id          String    @id @default(cuid())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String
-  challenge   Challenge @relation(fields: [challengeId], references: [id])
-  challengeId String
-  count       Int
-  date        DateTime  @default(now()) @db.Date
-  createdAt   DateTime  @default(now())
+// Records what a user actually did — one row per user per activity type per day
+model ActivityLog {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  type      String   // "pushup", "situp", "pullup", "walking", etc.
+  count     Int
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
 
-  @@unique([userId, challengeId, date])
+  @@unique([userId, type, date])
 }
