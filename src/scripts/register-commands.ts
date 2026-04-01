@@ -7,6 +7,7 @@ import { data as logCommand } from '../bot/commands/log';
 import { data as resultsCommand } from '../bot/commands/results';
 import { data as startChallengeCommand } from '../bot/commands/startChallenge';
 import { data as openStatsCommand } from '../bot/commands/openStats';
+import { data as enableNotificationCommand } from '../bot/commands/enableNotification';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ const commands = [
   resultsCommand.toJSON(),
   startChallengeCommand.toJSON(),
   openStatsCommand.toJSON(),
+  enableNotificationCommand.toJSON(),
 ];
 
 const rest = new REST().setToken(token);

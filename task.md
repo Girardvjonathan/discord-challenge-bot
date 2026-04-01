@@ -90,7 +90,7 @@ A Discord challenge bot with a Next.js admin dashboard. Users log daily activiti
 - Count range enforced (`min: 1`, `max: 1,000,000`) on all log commands
 - Remaining: startup env var validation; DB connection error handling
 
-**Task 14 — Environment & deployment config** ⬜
+**Task 14 — Environment & deployment config** ✅
 - Add `.env.example` with all required vars
 - Add startup check that fails fast with a clear message if required vars are missing
 

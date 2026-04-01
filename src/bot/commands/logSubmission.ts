@@ -109,9 +109,10 @@ export async function logSubmission(
     const challengeList = matchingChannels.length > 0
       ? `\nContributing to: ${matchingChannels.map(c => `**${c.challengeName}**`).join(', ')}`
       : '\n_No active challenges match this activity._';
+    const statsUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? 'http://localhost:3000';
 
     await interaction.editReply(
-      `${action} **${count} ${resolvedType}** for today! Keep it up!${challengeList}`
+      `${action} **${count} ${resolvedType}** for today! Keep it up!${challengeList}\n\n📊 [View your stats](${statsUrl}/admin)`
     );
   } catch (err) {
     console.error('[logSubmission] error:', err);

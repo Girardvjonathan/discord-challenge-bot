@@ -12,6 +12,7 @@ model User {
   username             String
   avatar               String?
   notificationsEnabled Boolean       @default(false)
+  notificationTime     String        @default("08:45")
   createdAt            DateTime      @default(now())
   activityLogs         ActivityLog[]
   channels             ChannelUser[]

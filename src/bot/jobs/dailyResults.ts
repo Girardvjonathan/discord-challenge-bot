@@ -34,7 +34,7 @@ export async function postDailyResults(client: Client, discordChannelId?: string
         const code = fetchErr?.code;
         if (code === 50001 || code === 10003) {
           console.warn(`[dailyResults] bot lost access to channel=${ch.discordChannelId} (code=${code}), deactivating`);
-          await prisma.channel.update({ where: { id: ch.id }, data: { challengeActive: false } });
+          // await prisma.channel.update({ where: { id: ch.id }, data: { challengeActive: false } });
         } else {
           console.error(`[dailyResults] failed to fetch channel=${ch.discordChannelId}:`, fetchErr);
         }

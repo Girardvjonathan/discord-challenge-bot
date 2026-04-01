@@ -83,6 +83,9 @@ client.on('interactionCreate', async (interaction) => {
   } else if (commandName === 'open_my_challenge_stats') {
     const { handleOpenStats } = await import('./commands/openStats');
     await handleOpenStats(interaction);
+  } else if (commandName === 'enable_challenge_notification') {
+    const { handleEnableNotification } = await import('./commands/enableNotification');
+    await handleEnableNotification(interaction);
   }
 });
 

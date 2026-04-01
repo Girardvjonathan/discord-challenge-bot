@@ -1,8 +1,18 @@
 import cron from 'node-cron';
 import { Client } from 'discord.js';
 import { postDailyResults } from './jobs/dailyResults';
+import { sendDailyReminders } from './jobs/sendReminders';
 
 export function scheduleDailyJobs(client: Client) {
+  // Check every minute and send reminders to users whose notification time matches now
+  cron.schedule('* * * * *', async () => {
+    const now = new Date();
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    const currentTime = `${hh}:${mm}`;
+    await sendDailyReminders(client, currentTime);
+  });
+
   // Post daily results at 5PM UTC
   cron.schedule('0 17 * * *', async () => {
     console.log('5PM — posting daily results...');

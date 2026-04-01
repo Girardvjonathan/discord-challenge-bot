@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import Calendar from '../components/Calendar';
 import Stats from '../components/Stats';
+import NotificationSettings from '../components/NotificationSettings';
 
 export default async function AdminDashboard() {
   const session = await auth();
@@ -38,6 +39,7 @@ export default async function AdminDashboard() {
       </header>
 
       <main style={{ maxWidth: '860px', margin: '0 auto', padding: '2rem 1.5rem' }}>
+        <NotificationSettings />
         <Stats />
 
         <h2 style={{ marginTop: '2rem', marginBottom: '0.75rem', color: 'var(--text-normal)' }}>Check-in Calendar</h2>
