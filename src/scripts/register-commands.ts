@@ -1,8 +1,6 @@
 import { REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
-import { data as pushupCommand } from '../bot/commands/pushup';
-import { data as situpCommand } from '../bot/commands/situp';
-import { data as pullupCommand } from '../bot/commands/pullup';
+import { pushupData as pushupCommand, situpData as situpCommand, pullupData as pullupCommand } from '../bot/commands/exercises';
 import { data as logCommand } from '../bot/commands/submit_challenge_activity';
 import { data as resultsCommand } from '../bot/commands/challenge_daily_result';
 import { data as startChallengeCommand } from '../bot/commands/start_challenge';

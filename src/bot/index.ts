@@ -63,13 +63,13 @@ client.on('interactionCreate', async (interaction) => {
   const { commandName } = interaction;
 
   if (commandName === 'pushup') {
-    const { handlePushup } = await import('./commands/pushup');
+    const { handlePushup } = await import('./commands/exercises');
     await handlePushup(interaction);
   } else if (commandName === 'situp') {
-    const { handleSitup } = await import('./commands/situp');
+    const { handleSitup } = await import('./commands/exercises');
     await handleSitup(interaction);
   } else if (commandName === 'pullup') {
-    const { handlePullup } = await import('./commands/pullup');
+    const { handlePullup } = await import('./commands/exercises');
     await handlePullup(interaction);
   } else if (commandName === 'submit_challenge_activity') {
     const { handleLog } = await import('./commands/submit_challenge_activity');
