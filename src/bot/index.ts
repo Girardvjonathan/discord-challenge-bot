@@ -72,19 +72,19 @@ client.on('interactionCreate', async (interaction) => {
     const { handlePullup } = await import('./commands/pullup');
     await handlePullup(interaction);
   } else if (commandName === 'submit_challenge_activity') {
-    const { handleLog } = await import('./commands/log');
+    const { handleLog } = await import('./commands/submit_challenge_activity');
     await handleLog(interaction);
   } else if (commandName === 'challenge_daily_result') {
-    const { handleResults } = await import('./commands/results');
+    const { handleResults } = await import('./commands/challenge_daily_result');
     await handleResults(interaction);
   } else if (commandName === 'start_challenge') {
-    const { handleStartChallenge } = await import('./commands/startChallenge');
+    const { handleStartChallenge } = await import('./commands/start_challenge');
     await handleStartChallenge(interaction);
   } else if (commandName === 'open_my_challenge_stats') {
-    const { handleOpenStats } = await import('./commands/openStats');
+    const { handleOpenStats } = await import('./commands/open_my_challenge_stats');
     await handleOpenStats(interaction);
   } else if (commandName === 'enable_challenge_notification') {
-    const { handleEnableNotification } = await import('./commands/enableNotification');
+    const { handleEnableNotification } = await import('./commands/enable_challenge_notification');
     await handleEnableNotification(interaction);
   }
 });

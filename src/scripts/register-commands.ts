@@ -3,11 +3,11 @@ import dotenv from 'dotenv';
 import { data as pushupCommand } from '../bot/commands/pushup';
 import { data as situpCommand } from '../bot/commands/situp';
 import { data as pullupCommand } from '../bot/commands/pullup';
-import { data as logCommand } from '../bot/commands/log';
-import { data as resultsCommand } from '../bot/commands/results';
-import { data as startChallengeCommand } from '../bot/commands/startChallenge';
-import { data as openStatsCommand } from '../bot/commands/openStats';
-import { data as enableNotificationCommand } from '../bot/commands/enableNotification';
+import { data as logCommand } from '../bot/commands/submit_challenge_activity';
+import { data as resultsCommand } from '../bot/commands/challenge_daily_result';
+import { data as startChallengeCommand } from '../bot/commands/start_challenge';
+import { data as openStatsCommand } from '../bot/commands/open_my_challenge_stats';
+import { data as enableNotificationCommand } from '../bot/commands/enable_challenge_notification';
 
 dotenv.config();
 
