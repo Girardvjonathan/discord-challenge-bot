@@ -27,7 +27,19 @@ export async function postDailyResults(client: Client, discordChannelId?: string
       }
 
       console.log(`[dailyResults] processing channel=${ch.name} type=${ch.challengeType}`);
-      const discordChannel = await client.channels.fetch(ch.discordChannelId) as TextChannel | null;
+      let discordChannel: TextChannel | null = null;
+      try {
+        discordChannel = await client.channels.fetch(ch.discordChannelId) as TextChannel | null;
+      } catch (fetchErr: any) {
+        const code = fetchErr?.code;
+        if (code === 50001 || code === 10003) {
+          console.warn(`[dailyResults] bot lost access to channel=${ch.discordChannelId} (code=${code}), deactivating`);
+          await prisma.channel.update({ where: { id: ch.id }, data: { challengeActive: false } });
+        } else {
+          console.error(`[dailyResults] failed to fetch channel=${ch.discordChannelId}:`, fetchErr);
+        }
+        continue;
+      }
       if (!discordChannel) {
         console.warn(`[dailyResults] could not fetch discord channel=${ch.discordChannelId}, skipping`);
         continue;
