@@ -15,9 +15,12 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "register": "ts-node --project tsconfig.bot.json src/scripts/register-commands.ts",
+    "register:guild": "ts-node --project tsconfig.bot.json src/scripts/register-guild.ts",
+    "register:global": "ts-node --project tsconfig.bot.json src/scripts/register-global.ts",
     "trigger:results": "ts-node --project tsconfig.bot.json src/scripts/trigger-daily-results.ts",
-    "trigger:reminders": "ts-node --project tsconfig.bot.json src/scripts/trigger-reminders.ts"
+    "trigger:reminders": "ts-node --project tsconfig.bot.json src/scripts/trigger-reminders.ts",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.6.0",
@@ -38,9 +41,11 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "concurrently": "^9.0.0",
     "prisma": "^7.6.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.2"
   }
 }

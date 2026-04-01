@@ -42,7 +42,10 @@ Use one of the logging commands each day to submit your count:
 | `/pullup <count>` | Log pull-ups for today |
 | `/submit_challenge_activity <count>` | Log activity for custom or open challenges |
 
-Your submission automatically counts toward every challenge you're enrolled in that matches the activity type.
+Submissions apply across challenges: logging an activity contributes to every challenge
+you're enrolled in that matches. For example, logging push-ups counts toward any active push-up
+challenge and any "Any activities" challenge you're part of. This works whether you submit
+from a challenge channel or via DM.
 
 ---
 
