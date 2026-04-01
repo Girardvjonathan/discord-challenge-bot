@@ -37,7 +37,7 @@ export async function handleEnableNotification(interaction: ChatInputCommandInte
 
     await interaction.editReply(
       enabled
-        ? '🔔 Daily reminders **enabled**. You\'ll get a DM each morning if you haven\'t logged yet. Set your preferred time in the dashboard.'
+        ? '🔔 Daily reminders **enabled**. You\'ll get a DM if you haven\'t logged yet. Set your preferred time (New York time) in the dashboard.'
         : '🔕 Daily reminders **disabled**. You won\'t receive any more reminder DMs.'
     );
   } catch (err) {

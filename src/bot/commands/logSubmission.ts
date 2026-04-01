@@ -18,19 +18,24 @@ export async function logSubmission(
   activityType: string | null,
   count: number,
 ) {
-  if (!interaction.guildId) {
-    await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+  const inDM = !interaction.guildId;
+
+  // /submit_challenge_activity requires a channel to resolve the activity type
+  if (inDM && activityType === null) {
+    await interaction.reply({ content: 'This command can only be used in a challenge channel — the bot needs to know which activity type to log.' });
     return;
   }
 
-  console.log(`[logSubmission] user=${interaction.user.username} channel=${interaction.channelId} activityType=${activityType} count=${count}`);
-  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  console.log(`[logSubmission] user=${interaction.user.username} ${inDM ? 'DM' : `channel=${interaction.channelId}`} activityType=${activityType} count=${count}`);
+  await interaction.deferReply(inDM ? {} : { flags: MessageFlags.Ephemeral });
 
   try {
-    const channel = await prisma.channel.findUnique({
+    const channel = inDM ? null : await prisma.channel.findUnique({
       where: { discordChannelId: interaction.channelId },
     });
-    console.log(`[logSubmission] channel lookup: ${channel ? `found id=${channel.id} type=${channel.challengeType} active=${channel.challengeActive}` : 'not found'}`);
+    if (!inDM) {
+      console.log(`[logSubmission] channel lookup: ${channel ? `found id=${channel.id} type=${channel.challengeType} active=${channel.challengeActive}` : 'not found'}`);
+    }
 
     // Resolve activity type from channel challenge when not explicitly provided
     let resolvedType: string;
@@ -64,6 +69,15 @@ export async function logSubmission(
         avatar: interaction.user.avatar,
       },
     });
+
+    // In DMs, require the user to already be enrolled in at least one challenge channel
+    if (inDM) {
+      const enrolled = await prisma.channelUser.count({ where: { userId: user.id } });
+      if (enrolled === 0) {
+        await interaction.editReply('You\'re not enrolled in any challenge channel yet. Use a logging command in a challenge channel first.');
+        return;
+      }
+    }
 
     if (channel) {
       await prisma.channelUser.upsert({

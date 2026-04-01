@@ -112,7 +112,7 @@ export default function NotificationSettings() {
               cursor: 'pointer',
             }}
           />
-          <span style={{ color: '#64748b', fontSize: 12 }}>UTC</span>
+          <span style={{ color: '#64748b', fontSize: 12 }}>New York time</span>
         </div>
       )}
     </div>

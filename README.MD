@@ -75,6 +75,35 @@ This sends you a private link to your dashboard where you can:
 
 ---
 
+## Daily Reminders
+
+Opt in to receive a DM reminder if you haven't logged your activity for the day.
+
+**Option 1 — Discord command:**
+```
+/enable_challenge_notification on
+```
+```
+/enable_challenge_notification off
+```
+
+**Option 2 — Web dashboard:**
+
+Go to your dashboard via `/open_my_challenge_stats`, then use the **Daily Reminders** toggle at the top of the page. When enabled, you can also set the time you want to be reminded (in New York / ET time).
+
+> Reminders are only sent if you haven't logged any activity yet that day.
+
+---
+
+## Known Issues
+
+- **Notification timezone** — Reminder times are set in New York time (ET). Users in other timezones have no way to select their local time.
+- **Streak not recalculated on edit** — Editing or deleting a past entry via the calendar does not update the streak shown on the dashboard until the next page load, and the streak logic itself does not retroactively recompute from edited history.
+- **Missed daily post on restart** — If the bot restarts exactly at 5 PM, the daily results cron job may be skipped. There is no "already posted today" guard per channel.
+- **DM submissions require prior enrollment** — Users can submit activities via DM only if they have previously logged in a challenge channel. New users must use a channel command first.
+
+---
+
 <details>
 <summary><strong>Developer & Deployment Guide</strong></summary>
 

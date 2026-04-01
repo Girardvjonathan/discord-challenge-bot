@@ -4,11 +4,16 @@ import { postDailyResults } from './jobs/dailyResults';
 import { sendDailyReminders } from './jobs/sendReminders';
 
 export function scheduleDailyJobs(client: Client) {
-  // Check every minute and send reminders to users whose notification time matches now
+  // Check every minute and send reminders to users whose notification time matches now (New York time)
   cron.schedule('* * * * *', async () => {
-    const now = new Date();
-    const hh = String(now.getUTCHours()).padStart(2, '0');
-    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date());
+    const hh = parts.find(p => p.type === 'hour')!.value.padStart(2, '0');
+    const mm = parts.find(p => p.type === 'minute')!.value.padStart(2, '0');
     const currentTime = `${hh}:${mm}`;
     await sendDailyReminders(client, currentTime);
   });
