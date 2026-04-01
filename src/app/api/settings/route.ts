@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 
+type SessionUser = { discordId: string };
+
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.discordId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const discordId = (session?.user as SessionUser | undefined)?.discordId;
+  if (!discordId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const user = await prisma.user.findUnique({
-    where: { discordId: session.user.discordId },
+    where: { discordId },
     select: { notificationsEnabled: true, notificationTime: true },
   });
 
@@ -19,7 +22,8 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.discordId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const discordId = (session?.user as SessionUser | undefined)?.discordId;
+  if (!discordId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
   const { notificationsEnabled, notificationTime } = body;
@@ -31,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const user = await prisma.user.update({
-    where: { discordId: session.user.discordId },
+    where: { discordId },
     data,
     select: { notificationsEnabled: true, notificationTime: true },
   });
