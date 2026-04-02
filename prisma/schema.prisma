@@ -29,6 +29,7 @@ model Channel {
   challengeType    String?       // pushup | situp | pullup | any | other
   challengeName    String?       // display name; required when challengeType = "other"
   challengeActive  Boolean       @default(false)
+  lastDailyPostAt  DateTime?
   createdAt        DateTime      @default(now())
   users            ChannelUser[]
 }

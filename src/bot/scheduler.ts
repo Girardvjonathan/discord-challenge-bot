@@ -2,9 +2,9 @@ import cron from 'node-cron';
 import { Client } from 'discord.js';
 import { postDailyResults } from './jobs/dailyResults';
 import { sendDailyReminders } from './jobs/sendReminders';
-
 export function scheduleDailyJobs(client: Client) {
   // Check every minute and send reminders to users whose notification time matches now (New York time)
+  // No retry needed — failed ticks are naturally retried on the next minute
   cron.schedule('* * * * *', async () => {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: 'America/New_York',

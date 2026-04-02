@@ -62,14 +62,18 @@ describe('sendDailyReminders', () => {
   });
 
   it('continues sending to other users when one DM fails', async () => {
+    vi.useFakeTimers();
     vi.mocked(prisma.user.findMany).mockResolvedValue(mockUsers as any);
     vi.mocked(prisma.activityLog.findMany).mockResolvedValue([]);
     const sendFn = vi.fn()
-      .mockRejectedValueOnce(new Error('Cannot send DMs to this user'))
-      .mockResolvedValueOnce(undefined);
+      .mockRejectedValue(new Error('Cannot send DMs to this user')) // alice always fails
+      .mockResolvedValueOnce(undefined);                             // bob succeeds
     const client = makeClient(sendFn);
-    await sendDailyReminders(client, '08:45');
-    expect(sendFn).toHaveBeenCalledTimes(2);
+    const promise = sendDailyReminders(client, '08:45');
+    await vi.runAllTimersAsync();
+    await promise;
+    vi.useRealTimers();
+    expect(sendFn).toHaveBeenCalledTimes(4); // alice retries 3x, bob succeeds 1x
   });
 
   it('sends reminders to all opted-in users when no time filter is given', async () => {

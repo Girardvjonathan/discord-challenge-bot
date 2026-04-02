@@ -1,5 +1,6 @@
 import { Client, TextChannel } from 'discord.js';
 import { prisma } from '../../lib/prisma';
+import { withRetry } from '../utils/retry';
 
 /**
  * Posts daily results for all active challenge channels, or a specific one.
@@ -20,12 +21,18 @@ export async function postDailyResults(client: Client, discordChannelId?: string
   console.log(`[dailyResults] found ${channels.length} active channel(s)`);
 
   for (const ch of channels) {
-    try {
-      if (!ch.challengeType) {
-        console.log(`[dailyResults] skipping channel=${ch.name} — no challengeType set`);
-        continue;
-      }
+    if (!ch.challengeType) {
+      console.log(`[dailyResults] skipping channel=${ch.name} — no challengeType set`);
+      continue;
+    }
 
+    // Skip if already posted today (guards against double-post on bot restart)
+    if (ch.lastDailyPostAt && ch.lastDailyPostAt >= today) {
+      console.log(`[dailyResults] skipping channel=${ch.name} — already posted today`);
+      continue;
+    }
+
+    await withRetry(async () => {
       console.log(`[dailyResults] processing channel=${ch.name} type=${ch.challengeType}`);
       let discordChannel: TextChannel | null = null;
       try {
@@ -35,14 +42,13 @@ export async function postDailyResults(client: Client, discordChannelId?: string
         if (code === 50001 || code === 10003) {
           console.warn(`[dailyResults] bot lost access to channel=${ch.discordChannelId} (code=${code}), deactivating`);
           // await prisma.channel.update({ where: { id: ch.id }, data: { challengeActive: false } });
-        } else {
-          console.error(`[dailyResults] failed to fetch channel=${ch.discordChannelId}:`, fetchErr);
+          return; // permanent failure, don't retry
         }
-        continue;
+        throw fetchErr; // transient — let withRetry handle it
       }
       if (!discordChannel) {
         console.warn(`[dailyResults] could not fetch discord channel=${ch.discordChannelId}, skipping`);
-        continue;
+        return;
       }
 
       const members = await prisma.channelUser.findMany({
@@ -54,13 +60,14 @@ export async function postDailyResults(client: Client, discordChannelId?: string
 
       if (ch.challengeType === 'any') {
         await postAnyResults(discordChannel, ch.challengeName!, memberIds, members, today);
-        continue;
+        await prisma.channel.update({ where: { id: ch.id }, data: { lastDailyPostAt: new Date() } });
+        return;
       }
 
       // Specific type challenge (pushup, situp, pullup, other)
       const resolvedType = ch.challengeType === 'other'
         ? ch.challengeName!.toLowerCase()
-        : ch.challengeType;
+        : ch.challengeType!;
 
       const logs = await prisma.activityLog.findMany({
         where: { userId: { in: memberIds }, type: resolvedType, date: today },
@@ -80,7 +87,8 @@ export async function postDailyResults(client: Client, discordChannelId?: string
       console.log(`[dailyResults] channel=${ch.name} — ${ranked.length} participant(s) logged today`);
       if (ranked.length === 0) {
         await discordChannel.send(`📭 No ${ch.challengeName!.toLowerCase()} logged today. Get after it tomorrow!`);
-        continue;
+        await prisma.channel.update({ where: { id: ch.id }, data: { lastDailyPostAt: new Date() } });
+        return;
       }
 
       const lines = ranked.map((entry, i) => {
@@ -94,10 +102,10 @@ export async function postDailyResults(client: Client, discordChannelId?: string
         `💪 **Today's ${ch.challengeName} Results**\n\n${lines.join('\n')}\n\n` +
         `**${ranked.length}** participant${ranked.length !== 1 ? 's' : ''} · **${grandTotal}** total`,
       );
+      await prisma.channel.update({ where: { id: ch.id }, data: { lastDailyPostAt: new Date() } });
       console.log(`[dailyResults] posted results for channel=${ch.name} participants=${ranked.length} total=${grandTotal}`);
-    } catch (err) {
-      console.error(`[dailyResults] error for channel ${ch.name}:`, err);
-    }
+    }, { retries: 3, delayMs: 10000, label: `daily results channel=${ch.name}` })
+      .catch(err => console.error(`[dailyResults] channel=${ch.name} failed after all retries:`, err));
   }
 }
 

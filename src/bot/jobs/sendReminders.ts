@@ -1,5 +1,9 @@
 import { Client } from 'discord.js';
 import { prisma } from '../../lib/prisma';
+import { withRetry } from '../utils/retry';
+
+// Discord error code 50007 = user has DMs disabled — permanent, not worth retrying
+const PERMANENT_DM_ERROR = 50007;
 
 export async function sendDailyReminders(client: Client, currentTime?: string) {
   const today = new Date();
@@ -37,7 +41,7 @@ export async function sendDailyReminders(client: Client, currentTime?: string) {
   let failed = 0;
 
   for (const user of toRemind) {
-    try {
+    await withRetry(async () => {
       const discordUser = await client.users.fetch(user.discordId);
       await discordUser.send(
         `👋 **Daily challenge reminder!**\n\n` +
@@ -47,11 +51,15 @@ export async function sendDailyReminders(client: Client, currentTime?: string) {
       );
       console.log(`[sendReminders] DM sent to user=${user.username}`);
       sent++;
-    } catch (err: any) {
-      // User may have DMs disabled — log but don't crash
-      console.warn(`[sendReminders] could not DM user=${user.username}: ${err?.message}`);
-      failed++;
-    }
+    }, { retries: 3, delayMs: 5000, label: `reminder user=${user.username}` })
+      .catch((err: any) => {
+        if (err?.code === PERMANENT_DM_ERROR) {
+          console.warn(`[sendReminders] user=${user.username} has DMs disabled, skipping`);
+        } else {
+          console.warn(`[sendReminders] could not DM user=${user.username} after all retries: ${err?.message}`);
+        }
+        failed++;
+      });
   }
 
   console.log(`[sendReminders] done — sent=${sent} failed=${failed}`);
