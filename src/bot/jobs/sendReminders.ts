@@ -14,7 +14,19 @@ export async function sendDailyReminders(client: Client, currentTime?: string) {
     ? { notificationsEnabled: true, notificationTime: currentTime }
     : { notificationsEnabled: true };
 
-  const users = await prisma.user.findMany({ where });
+  let users;
+  try {
+    users = await prisma.user.findMany({ where });
+  } catch (err: any) {
+    if (err?.code === 'P1001') {
+      console.warn('[sendReminders] DB unreachable, reconnecting and retrying...');
+      await prisma.$disconnect();
+      await prisma.$connect();
+      users = await prisma.user.findMany({ where });
+    } else {
+      throw err;
+    }
+  }
 
   if (users.length === 0) return;
   console.log(`[sendReminders] ${currentTime ?? 'manual'} — ${users.length} user(s) to remind`);
