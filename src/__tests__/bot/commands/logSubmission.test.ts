@@ -95,7 +95,7 @@ describe('logSubmission — type resolution from channel', () => {
     expect(prisma.activityLog.upsert).not.toHaveBeenCalled();
   });
 
-  it('rejects "any" challenge type for /submit_challenge_activity', async () => {
+  it('rejects "any" challenge type for /submit_challenge_activity and hints about type option', async () => {
     vi.mocked(prisma.channel.findUnique).mockResolvedValue({
       ...mockChannel,
       challengeType: 'any',
@@ -103,9 +103,26 @@ describe('logSubmission — type resolution from channel', () => {
     const interaction = makeInteraction();
     await logSubmission(interaction, null, 10);
     expect(interaction.editReply).toHaveBeenCalledWith(
-      expect.stringContaining('open challenge'),
+      expect.stringContaining('type:'),
     );
     expect(prisma.activityLog.upsert).not.toHaveBeenCalled();
+  });
+
+  it('logs with explicit type in an "any" channel without rejection', async () => {
+    vi.mocked(prisma.channel.findUnique).mockResolvedValue({
+      ...mockChannel,
+      challengeType: 'any',
+    } as any);
+    vi.mocked(prisma.channelUser.findMany).mockResolvedValue([
+      { channel: { challengeActive: true, challengeType: 'any', challengeName: 'Fitness', id: 'ch-1' } },
+    ] as any);
+    const interaction = makeInteraction();
+    await logSubmission(interaction, 'stretching', 15);
+    expect(prisma.activityLog.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ type: 'stretching', count: 15 }),
+      }),
+    );
   });
 
   it('resolves activity type from challengeName for "other" challenges', async () => {

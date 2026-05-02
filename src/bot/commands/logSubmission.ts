@@ -48,8 +48,8 @@ export async function logSubmission(
         return;
       }
       if (channel.challengeType === 'any') {
-        console.log(`[logSubmission] rejected: open 'any' challenge requires specific command`);
-        await interaction.editReply('This is an open challenge — please use a specific command: `/pushup`, `/situp`, `/pullup`, or `/submit_challenge_activity`.');
+        console.log(`[logSubmission] rejected: open 'any' challenge requires explicit type`);
+        await interaction.editReply('This is an open challenge — please specify an activity with `/submit_challenge_activity count:X type:stretching`.');
         return;
       }
       // For "other" challenges, use the challenge name as the activity identifier

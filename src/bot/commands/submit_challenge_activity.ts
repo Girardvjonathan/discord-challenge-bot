@@ -10,10 +10,16 @@ export const data = new SlashCommandBuilder()
       .setRequired(true)
       .setMinValue(1)
       .setMaxValue(1000000)
+  )
+  .addStringOption(o =>
+    o.setName('type')
+      .setDescription('Activity type (e.g. stretching, walking, yoga) — required for open challenges')
+      .setRequired(false)
   );
 
 export async function handleLog(interaction: ChatInputCommandInteraction) {
   const count = interaction.options.getInteger('count', true);
-  console.log(`[submit_challenge_activity] user=${interaction.user.username} guild=${interaction.guildId} channel=${interaction.channelId} count=${count}`);
-  await logSubmission(interaction, null, count);
+  const type = interaction.options.getString('type');
+  console.log(`[submit_challenge_activity] user=${interaction.user.username} guild=${interaction.guildId} channel=${interaction.channelId} count=${count} type=${type ?? 'null'}`);
+  await logSubmission(interaction, type, count);
 }
