@@ -17,6 +17,7 @@
     "db:push": "prisma db push",
     "register:guild": "ts-node --project tsconfig.bot.json src/scripts/register-guild.ts",
     "register:global": "ts-node --project tsconfig.bot.json src/scripts/register-global.ts",
+    "unregister:guild": "ts-node --project tsconfig.bot.json src/scripts/unregister-guild.ts",
     "trigger:results": "ts-node --project tsconfig.bot.json src/scripts/trigger-daily-results.ts",
     "trigger:reminders": "ts-node --project tsconfig.bot.json src/scripts/trigger-reminders.ts",
     "test": "vitest",
