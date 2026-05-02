@@ -109,6 +109,11 @@ export async function postDailyResults(client: Client, discordChannelId?: string
   }
 }
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
 async function postAnyResults(
   discordChannel: TextChannel,
   challengeName: string,
@@ -116,6 +121,7 @@ async function postAnyResults(
   members: { userId: string; user: { username: string } }[],
   today: Date,
 ) {
+  const monthName = MONTH_NAMES[today.getUTCMonth()];
   console.log(`[postAnyResults] challenge=${challengeName} members=${memberIds.length} date=${today.toISOString().slice(0, 10)}`);
   const todayLogs = await prisma.activityLog.findMany({
     where: { userId: { in: memberIds }, date: today },
@@ -149,52 +155,40 @@ async function postAnyResults(
     }
   }
 
-  // Global streak: all ActivityLog dates for each channel member
-  const allLogs = await prisma.activityLog.findMany({
-    where: { userId: { in: memberIds } },
-    select: { userId: true, date: true },
+  // Monthly submissions: count ActivityLog rows per user since start of current month
+  const startOfMonth = new Date(today);
+  startOfMonth.setUTCDate(1);
+
+  const monthlyLogs = await prisma.activityLog.findMany({
+    where: { userId: { in: memberIds }, date: { gte: startOfMonth } },
+    select: { userId: true },
   });
 
-  const datesByUser = new Map<string, Set<number>>();
-  for (const log of allLogs) {
-    if (!datesByUser.has(log.userId)) datesByUser.set(log.userId, new Set());
-    datesByUser.get(log.userId)!.add(log.date.getTime());
+  const countByUser = new Map<string, number>();
+  for (const log of monthlyLogs) {
+    countByUser.set(log.userId, (countByUser.get(log.userId) ?? 0) + 1);
   }
 
-  const todayTime = today.getTime();
+  const ranked = members
+    .map(m => ({ username: m.user.username, count: countByUser.get(m.userId) ?? 0 }))
+    .filter(e => e.count > 0)
+    .sort((a, b) => b.count - a.count || a.username.localeCompare(b.username));
 
-  const streaks = members.map(m => {
-    const dates = datesByUser.get(m.userId) ?? new Set<number>();
-    if (!dates.has(todayTime)) return { username: m.user.username, streak: 0 };
-
-    let streak = 1;
-    const d = new Date(today);
-    d.setUTCDate(d.getUTCDate() - 1);
-    while (dates.has(d.getTime())) {
-      streak++;
-      d.setUTCDate(d.getUTCDate() - 1);
-    }
-    return { username: m.user.username, streak };
-  });
-
-  streaks.sort((a, b) => b.streak - a.streak || a.username.localeCompare(b.username));
-
-  const top5 = streaks.slice(0, 5);
+  const top5 = ranked.slice(0, 5);
   let rank = 1;
   const leaderboardLines = top5.map((entry, i) => {
-    if (i > 0 && top5[i - 1].streak !== entry.streak) rank = i + 1;
+    if (i > 0 && top5[i - 1].count !== entry.count) rank = i + 1;
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}.`;
-    const streakLabel = entry.streak === 0 ? '—' : `${entry.streak} day${entry.streak !== 1 ? 's' : ''}`;
-    return `${medal} **${entry.username}** — ${streakLabel}`;
+    return `${medal} **${entry.username}** — ${entry.count} submission${entry.count !== 1 ? 's' : ''}`;
   });
 
   const recentLines = featured.map(l => `• **${l.user.username}** — ${l.count} ${l.type}`);
 
-  console.log(`[postAnyResults] submissionCount=${submissionCount} participantCount=${participantCount} top streak=${top5[0]?.username}(${top5[0]?.streak}d)`);
+  console.log(`[postAnyResults] submissionCount=${submissionCount} participantCount=${participantCount} topMonthly=${top5[0]?.username}(${top5[0]?.count})`);
   await discordChannel.send(
-    `💪 **${challengeName} — Daily Update**\n\n` +
+    `💪 **${challengeName} — Daily Update (${monthName})**\n\n` +
     `📊 **${submissionCount}** submission${submissionCount !== 1 ? 's' : ''} · **${participantCount}** participant${participantCount !== 1 ? 's' : ''}\n\n` +
     `🕐 **Recent activity**\n${recentLines.join('\n')}\n\n` +
-    `🏆 **Streak Rankings**\n${leaderboardLines.join('\n')}`,
+    `🏆 **Rankings**\n${leaderboardLines.join('\n')}`,
   );
 }
